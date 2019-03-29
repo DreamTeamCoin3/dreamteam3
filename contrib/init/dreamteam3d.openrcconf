@@ -1,0 +1,26 @@
+# /etc/conf.d/dreamteam3d: config file for /etc/init.d/dreamteam3d
+
+# Config file location
+#BITCOIND_CONFIGFILE="/etc/dreamteam3/dreamteam3.conf"
+
+# What directory to write pidfile to?  (created and owned by $BITCOIND_USER)
+#BITCOIND_PIDDIR="/var/run/dreamteam3d"
+
+# What filename to give the pidfile
+#BITCOIND_PIDFILE="${BITCOIND_PIDDIR}/dreamteam3d.pid"
+
+# Where to write dreamteam3d data (be mindful that the blockchain is large)
+#BITCOIND_DATADIR="/var/lib/dreamteam3d"
+
+# User and group to own dreamteam3d process
+#BITCOIND_USER="dreamteam3"
+#BITCOIND_GROUP="dreamteam3"
+
+# Path to dreamteam3d executable
+#BITCOIND_BIN="/usr/bin/dreamteam3d"
+
+# Nice value to run dreamteam3d under
+#BITCOIND_NICE=0
+
+# Additional options (avoid -conf and -datadir, use flags above)
+BITCOIND_OPTS=""

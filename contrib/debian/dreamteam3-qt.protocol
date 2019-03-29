@@ -1,0 +1,11 @@
+[Protocol]
+exec=dreamteam3-qt '%u'
+protocol=dreamteam3
+input=none
+output=none
+helper=true
+listing=
+reading=false
+writing=false
+makedir=false
+deleting=false

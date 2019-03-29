@@ -1,0 +1,26 @@
+[Unit]
+Description=DreamTeam3's distributed currency daemon
+After=network.target
+
+[Service]
+User=dreamteam3
+Group=dreamteam3
+
+Type=forking
+PIDFile=/var/lib/dreamteam3d/dreamteam3d.pid
+
+ExecStart=/usr/bin/dreamteam3d -daemon -pid=/var/lib/dreamteam3d/dreamteam3d.pid \
+          -conf=/etc/dreamteam3/dreamteam3.conf -datadir=/var/lib/dreamteam3d
+
+ExecStop=-/usr/bin/dreamteam3-cli -conf=/etc/dreamteam3/dreamteam3.conf \
+         -datadir=/var/lib/dreamteam3d stop
+
+Restart=always
+PrivateTmp=true
+TimeoutStopSec=60s
+TimeoutStartSec=2s
+StartLimitInterval=120s
+StartLimitBurst=5
+
+[Install]
+WantedBy=multi-user.target
