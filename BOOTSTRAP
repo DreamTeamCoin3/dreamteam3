@@ -1,6 +1,0 @@
-1.  Download Bootstrap for fast initial sync  https://www.dropbox.com/sh/0olo5zxielso54p/AAC9jaS9mt5u1rVXTQb5e_Vba?dl=0
-2. Remove peers 
-3. Remove all addnodes
-4  Removes all block chain data (only wallet.dat and masternode.conf only if you have a running mn should be left in the folder)
-5. After sync finishes check if hot node is on the right chain or not
-
