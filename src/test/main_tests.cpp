@@ -11,6 +11,7 @@
 
 BOOST_AUTO_TEST_SUITE(main_tests)
 
+//How is this possible?
 CAmount nMoneySupplyPoWEnd = 43199500 * COIN;
 
 BOOST_AUTO_TEST_CASE(subsidy_limit_test)

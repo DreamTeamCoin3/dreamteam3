@@ -78,6 +78,8 @@ public:
     int64_t TargetSpacingSlowLaunch() const { return nTargetSpacingSlowLaunch; }
     int64_t Interval() const { return nTargetTimespan / nTargetSpacing; }
     int COINBASE_MATURITY() const { return nMaturity; }
+    /** MaxMoneyOut Fix **/
+    CAmount MaxMoneyOutLegacy() const { return nMaxMoneyOutLegacy; }
     CAmount MaxMoneyOut() const { return nMaxMoneyOut; }
     /** The masternode count that we will allow the see-saw reward payments to be off by */
     int MasternodeCountDrift() const { return nMasternodeCountDrift; }

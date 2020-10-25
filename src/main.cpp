@@ -2142,14 +2142,22 @@ int64_t GetBlockValue(int nHeight)
         nSubsidy = 25 * COIN;
       } else if (nHeight <= 2000000 && nHeight > 500000) {
         nSubsidy = 20 * COIN;
+      //Blocktime should be set to agreed blocktime on fix release and this comment line should be deleted
+      } else if (nHeight >= 3000000) {
+        nSubsidy = 3 * COIN;
       } else {
-	nSubsidy = 0 * COIN;
+	nSubsidy = 1 * COIN;
       }
 
   	int64_t nMoneySupply = chainActive.Tip()->nMoneySupply;
 
-	if (nMoneySupply + nSubsidy >= Params().MaxMoneyOut())
-  		nSubsidy = Params().MaxMoneyOut() - nMoneySupply;
+    //Blocktime should be set to agreed blocktime on fix release and this comment line should be deleted
+  	if (nHeight >= 3000000) {
+  	nMoneySupply + nSubsidy >= Params().MaxMoneyOut()
+  	} else (nMoneySupply + nSubsidy >= Params().MaxMoneyOutLegacy()) {
+  		nSubsidy = Params().MaxMoneyOutLegacy() - nMoneySupply;
+  		}
+
 
   	if (nMoneySupply >= Params().MaxMoneyOut())
   		nSubsidy = 0;
