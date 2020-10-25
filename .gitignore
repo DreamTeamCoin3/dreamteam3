@@ -126,7 +126,7 @@ DREAMTEAM3-Qt.app
 
 # Unit-tests
 Makefile.test
-ohmc-qt_test
+dreamteam3_test
 src/test/buildenv.py
 
 # Resources cpp
@@ -142,7 +142,7 @@ build
 #lcov
 *.gcno
 /*.info
-test_pivx.coverage/
+test_dreamteam3.coverage/
 total.coverage/
 coverage_percent.txt
 
@@ -184,3 +184,8 @@ build-aux/m4/libtool.m4
 build-aux/missing
 build-aux/test-driver
 src/Makefile.in
+build-aux/m4/libtool.m4
+src/crypto/libbitcoin_crypto.a
+src/libzerocoin/libbitcoin_zerocoin.a
+src/Makefile.in
+src/univalue/libbitcoin_univalue.a
