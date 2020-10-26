@@ -2153,8 +2153,8 @@ int64_t GetBlockValue(int nHeight)
 
     //Blocktime should be set to agreed blocktime on fix release and this comment line should be deleted
   	if (nHeight >= 3000000) {
-  	nMoneySupply + nSubsidy >= Params().MaxMoneyOut()
-  	} else (nMoneySupply + nSubsidy >= Params().MaxMoneyOutLegacy()) {
+  	nMoneySupply + nSubsidy >= Params().MaxMoneyOut();
+  	} else (nMoneySupply + nSubsidy >= Params().MaxMoneyOutLegacy()); {
   		nSubsidy = Params().MaxMoneyOutLegacy() - nMoneySupply;
   		}
 
