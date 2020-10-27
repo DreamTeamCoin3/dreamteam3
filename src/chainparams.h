@@ -73,12 +73,20 @@ public:
     bool SkipProofOfWorkCheck() const { return fSkipProofOfWorkCheck; }
     /** Make standard checks */
     bool RequireStandard() const { return fRequireStandard; }
-    // Legacy Time
-    int64_t TargetTimespanLegacy() const { return nTargetTimespanLegacy; }
-    int64_t TargetSpacingLegacy() const { return nTargetSpacingLegacy; }
-    /// New Time
+
+    /** Target Timespan */
     int64_t TargetTimespan() const { return nTargetTimespan; }
-    int64_t TargetSpacing() const { return nTargetSpacing; }
+    int64_t TargetTimespanLegacy() const { return nTargetTimespanLegacy; }
+    /** Get Target Timespan */
+    int64_t GetTimeSpan(int nHeight) {
+        int64_t timespan = TargetTimespan();
+        int64_t timespanLegacy = TargetTimespanLegacy();
+        if (nHeight >= 300000) {
+          return timespan;
+        } else {
+          return timespanLegacy;
+        }
+    }
 
     int64_t TargetSpacingSlowLaunch() const { return nTargetSpacingSlowLaunch; }
     int64_t Interval() const { return nTargetTimespan / nTargetSpacing; }
