@@ -87,7 +87,7 @@ public:
           return timespanLegacy;
         }
     }
-
+    nTargetSpacing = 1 * 60;
     int64_t TargetSpacingSlowLaunch() const { return nTargetSpacingSlowLaunch; }
     int64_t Interval() const { return nTargetTimespan / nTargetSpacing; }
     int COINBASE_MATURITY() const { return nMaturity; }
