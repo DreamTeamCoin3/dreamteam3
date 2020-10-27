@@ -100,6 +100,10 @@ public:
           return targetspacingLegacy;
         }
     }
+    int64_t IntervalLegacy() const { return nTargetTimespanLegacy / nTargetSpacingLegacy; }
+    /** Disable Legacy Blocktime Height */
+    int DisableLegacyTimeHeight() const { return nDisableLegacyTimeHeight; }
+    /** Majurity Checks */
     int64_t TargetSpacingSlowLaunch() const { return nTargetSpacingSlowLaunch; }
     int64_t Interval() const { return nTargetTimespan / nTargetSpacing; }
     int COINBASE_MATURITY() const { return nMaturity; }
@@ -167,7 +171,7 @@ protected:
     //New Time
     int64_t nTargetTimespan;
     int64_t nTargetSpacing;
-
+    int nDisableLegacyTimeHeight;
     int64_t nTargetSpacingSlowLaunch;
     int nLastPOWBlock;
     int nMasternodeCountDrift;
