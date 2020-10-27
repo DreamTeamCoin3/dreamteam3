@@ -108,15 +108,18 @@ public:
         nRejectBlockOutdatedMajority = 950;
         nToCheckBlockUpgradeMajority = 1000;
         nMinerThreads = 0;
-        nTargetTimespan = 1 * 60;
+        //Legacy Time
+        nTargetTimespanLegacy = 1 * 60; // DreamTeam3: 1 day
+        nTargetSpacingLegacy = 1 * 60;  // DreamTeam3: 1 minute
+        //New Time
+        nTargetTimespan = 1 * 60 * 60 * 2; // DreamTeam3: 120 minutes
+        nTargetSpacing = 1 * 60 * 5;  // DreamTeam3: 300 seconds
         nTargetSpacingSlowLaunch = 1 * 60;
-        nTargetSpacing = 1 * 60;
         nMaturity = 29;
         nMasternodeCountDrift = 20;
         //LastMoneyOut fix
         nMaxMoneyOutLegacy = 24000000 * COIN;
         nMaxMoneyOut = 100000000 * COIN;
-
         nLastPOWBlock = 300;
         nModifierUpdateBlock = 999999999;
         nZerocoinStartHeight = 999999999;

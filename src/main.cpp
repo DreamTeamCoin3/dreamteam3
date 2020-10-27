@@ -2163,8 +2163,20 @@ int64_t GetBlockValue(int nHeight)
   		nSubsidy = 0;
 
   	return nSubsidy;
-
 }
+
+/**int64_t GetBlockValue(int nHeight)
+{
+    int64_t timespan = TargetTimespan();
+    int64_t timespanLegacy = TargetTimespanLegacy();
+
+    if (nHeight >= 300000) {
+    return timespan;
+    } else {
+    return timespanLegacy;
+    }
+}
+**/
 
 int64_t GetMasternodePayment(int nHeight, int64_t blockValue, int nMasternodeCount)
 {

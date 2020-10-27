@@ -73,14 +73,20 @@ public:
     bool SkipProofOfWorkCheck() const { return fSkipProofOfWorkCheck; }
     /** Make standard checks */
     bool RequireStandard() const { return fRequireStandard; }
+    // Legacy Time
+    int64_t TargetTimespanLegacy() const { return nTargetTimespanLegacy; }
+    int64_t TargetSpacingLegacy() const { return nTargetSpacingLegacy; }
+    /// New Time
     int64_t TargetTimespan() const { return nTargetTimespan; }
     int64_t TargetSpacing() const { return nTargetSpacing; }
+
     int64_t TargetSpacingSlowLaunch() const { return nTargetSpacingSlowLaunch; }
     int64_t Interval() const { return nTargetTimespan / nTargetSpacing; }
     int COINBASE_MATURITY() const { return nMaturity; }
-    /** MaxMoneyOut Fix **/
+    // MaxMoneyOut Fix
     CAmount MaxMoneyOutLegacy() const { return nMaxMoneyOutLegacy; }
     CAmount MaxMoneyOut() const { return nMaxMoneyOut; }
+
     /** The masternode count that we will allow the see-saw reward payments to be off by */
     int MasternodeCountDrift() const { return nMasternodeCountDrift; }
     /** Make miner stop after a block is found. In RPC, don't return until nGenProcLimit blocks are generated */
@@ -135,8 +141,13 @@ protected:
     int nEnforceBlockUpgradeMajority;
     int nRejectBlockOutdatedMajority;
     int nToCheckBlockUpgradeMajority;
+    //Legacy Time
+    int64_t nTargetTimespanLegacy;
+    int64_t nTargetSpacingLegacy;
+    //New Time
     int64_t nTargetTimespan;
     int64_t nTargetSpacing;
+
     int64_t nTargetSpacingSlowLaunch;
     int nLastPOWBlock;
     int nMasternodeCountDrift;
