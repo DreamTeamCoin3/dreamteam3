@@ -73,7 +73,6 @@ public:
     bool SkipProofOfWorkCheck() const { return fSkipProofOfWorkCheck; }
     /** Make standard checks */
     bool RequireStandard() const { return fRequireStandard; }
-
     /** Target Timespan */
     int64_t TargetTimespan() const { return nTargetTimespan; }
     int64_t TargetTimespanLegacy() const { return nTargetTimespanLegacy; }
@@ -87,7 +86,20 @@ public:
           return timespanLegacy;
         }
     }
-    nTargetSpacing = 1 * 60;
+
+    // new spacing
+    int64_t TargetSpacing() const { return nTargetSpacing; }
+    int64_t TargetSpacingLegacy() const { return nTargetSpacingLegacy; }
+    // times travels face bags
+    int64_t GetTargetSpacing(int nHeight) {
+        int64_t targetspacing = TargetSpacing();
+        int64_t targetspacingLegacy = TargetSpacingLegacy();
+        if (nHeight >= 300000) {
+          return targetspacing;
+        } else {
+          return targetspacingLegacy;
+        }
+    }
     int64_t TargetSpacingSlowLaunch() const { return nTargetSpacingSlowLaunch; }
     int64_t Interval() const { return nTargetTimespan / nTargetSpacing; }
     int COINBASE_MATURITY() const { return nMaturity; }
