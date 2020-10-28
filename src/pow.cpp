@@ -42,7 +42,7 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast)
         int64_t nInterval = Params().IntervalLegacy();
 
         // New time activation check
-        bool bHeightReach = pindexLast->nHeight >= Params().DisableLegacyTimeHeight();
+        bool bHeightReach = pindexLast->nHeight >= Params().SupplyChangeStartHeight();
         // Actiavte by block height set.
         if (bHeightReach) {
           nTargetSpacing = Params().TargetSpacing();
