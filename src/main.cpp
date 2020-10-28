@@ -986,8 +986,8 @@ bool GetCoinAge(const CTransaction& tx, const unsigned int nTxTime, uint64_t& nC
 
 bool MoneyRange(CAmount nValueOut)
 {
-    const int nBlockHeight = chainActive.Height();
-    return nValueOut >= 0 && nValueOut <= Params().GetMaxMoneyOut(nBlockHeight);
+    const int nHeight = chainActive.Height();
+    return nValueOut >= 0 && nValueOut <= Params().GetMaxMoneyOut(nHeight);
 }
 
 int GetZerocoinStartHeight()
@@ -1423,8 +1423,8 @@ bool CheckTransaction(const CTransaction& tx, bool fZerocoinActive, bool fReject
     // Check for negative or overflow output values
     CAmount nValueOut = 0;
     int nZCSpendCount = 0;
-    int nChainHeight = chainActive.Height();
-    CAmount nMaxMoneyOut = Params().GetMaxMoneyOut(nChainHeight);
+    int nHeight = chainActive.Height();
+    CAmount nMaxMoneyOut = Params().GetMaxMoneyOut(nHeight);
     BOOST_FOREACH (const CTxOut& txout, tx.vout) {
         if (txout.IsEmpty() && !tx.IsCoinBase() && !tx.IsCoinStake())
             return state.DoS(100, error("CheckTransaction(): txout empty for user transaction"));
@@ -1552,8 +1552,8 @@ CAmount GetMinRelayFee(const CTransaction& tx, unsigned int nBytes, bool fAllowF
     }
 
     if (!MoneyRange(nMinFee)) {
-        int nChainHeight = chainActive.Height();
-        nMinFee = Params().GetMaxMoneyOut(nChainHeight);
+        int nHeight = chainActive.Height();
+        nMinFee = Params().GetMaxMoneyOut(nHeight);
     }
     return nMinFee;
 }

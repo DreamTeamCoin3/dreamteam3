@@ -78,7 +78,7 @@ public:
     int64_t TargetTimespan() const { return nTargetTimespan; }
     int64_t TargetTimespanLegacy() const { return nTargetTimespanLegacy; }
     /** Get Target Timespan */
-    int64_t GetTimeSpan(int nHeight) {
+    int64_t GetTimeSpan(int nHeight) const {
         int64_t timespan = TargetTimespan();
         int64_t timespanLegacy = TargetTimespanLegacy();
         int nStartHeight = SupplyChangeStartHeight();
@@ -93,7 +93,7 @@ public:
     int64_t TargetSpacing() const { return nTargetSpacing; }
     int64_t TargetSpacingLegacy() const { return nTargetSpacingLegacy; }
     /** times travels face bags */
-    int64_t GetTargetSpacing(int nHeight) {
+    int64_t GetTargetSpacing(int nHeight) const {
         int64_t targetspacing = TargetSpacing();
         int64_t targetspacingLegacy = TargetSpacingLegacy();
         int nStartHeight = SupplyChangeStartHeight();
@@ -115,7 +115,7 @@ public:
     CAmount MaxMoneyOut() const { return nMaxMoneyOut; }
     CAmount MaxMoneyOutLegacy() const { return nMaxMoneyOutLegacy; }
     /** money travels bag faces */
-    CAmount GetMaxMoneyOut(int nHeight) {
+    CAmount GetMaxMoneyOut(int nHeight) const {
         CAmount max = MaxMoneyOut();
         CAmount maxLegacy = MaxMoneyOutLegacy();
         int nStartHeight = SupplyChangeStartHeight();
