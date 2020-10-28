@@ -2143,12 +2143,15 @@ int64_t GetBlockValue(int nHeight)
         nSubsidy = 35 * COIN;
       } else if (nHeight <= 250000 && nHeight > 150000) {
         nSubsidy = 30 * COIN;
-      } else if (nHeight <= 500000 && nHeight > 250000) {
+      } else if (nHeight <= 847302 && nHeight > 250000) {
         nSubsidy = 25 * COIN;
-      } else if (nHeight <= Params().SupplyChangeStartHeight() && nHeight > 500000) {
-        nSubsidy = 20 * COIN;
-      } else if (nHeight > Params().SupplyChangeStartHeight()) {
-        nSubsidy = 3 * COIN; // TODO: Determine new base reward value.
+      } else if (nHeight <= 876391 && nHeight > 847302) {
+        nSubsidy = 15 * COIN;
+      } else if (nHeight <= 963656 && nHeight > 876391) {
+        nSubsidy = 10 * COIN;
+      /** Last Inflation Rate Change about Sept 12 2021 **/
+      } else if (nHeight <= Params().SupplyChangeStartHeight() && nHeight > 963656) {
+        nSubsidy = 5 * COIN;
       } else {
         nSubsidy = 1 * COIN;
       }
