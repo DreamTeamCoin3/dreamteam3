@@ -73,6 +73,7 @@ public:
     bool SkipProofOfWorkCheck() const { return fSkipProofOfWorkCheck; }
     /** Make standard checks */
     bool RequireStandard() const { return fRequireStandard; }
+
     /** Target Timespan */
     int64_t TargetTimespan() const { return nTargetTimespan; }
     int64_t TargetTimespanLegacy() const { return nTargetTimespanLegacy; }
@@ -80,36 +81,53 @@ public:
     int64_t GetTimeSpan(int nHeight) {
         int64_t timespan = TargetTimespan();
         int64_t timespanLegacy = TargetTimespanLegacy();
-        if (nHeight >= 300000) {
+        int nStartHeight = SupplyChangeStartHeight();
+        if (nHeight >= nStartHeight) {
           return timespan;
         } else {
           return timespanLegacy;
         }
     }
 
-    // new spacing
+    /** Target block time spacing */
     int64_t TargetSpacing() const { return nTargetSpacing; }
     int64_t TargetSpacingLegacy() const { return nTargetSpacingLegacy; }
-    // times travels face bags
+    /** times travels face bags */
     int64_t GetTargetSpacing(int nHeight) {
         int64_t targetspacing = TargetSpacing();
         int64_t targetspacingLegacy = TargetSpacingLegacy();
-        if (nHeight >= 300000) {
+        int nStartHeight = SupplyChangeStartHeight();
+        if (nHeight >= nStartHeight) {
           return targetspacing;
         } else {
           return targetspacingLegacy;
         }
     }
-    int64_t IntervalLegacy() const { return nTargetTimespanLegacy / nTargetSpacingLegacy; }
-    /** Disable Legacy Blocktime Height */
-    int DisableLegacyTimeHeight() const { return nDisableLegacyTimeHeight; }
+
     /** Majurity Checks */
-    int64_t TargetSpacingSlowLaunch() const { return nTargetSpacingSlowLaunch; }
-    int64_t Interval() const { return nTargetTimespan / nTargetSpacing; }
     int COINBASE_MATURITY() const { return nMaturity; }
-    // MaxMoneyOut Fix
-    CAmount MaxMoneyOutLegacy() const { return nMaxMoneyOutLegacy; }
+    /** Target blocktime Interval */
+    int64_t Interval() const { return nTargetTimespan / nTargetSpacing; }
+    int64_t IntervalLegacy() const { return nTargetTimespanLegacy / nTargetSpacingLegacy; }
+    int64_t TargetSpacingSlowLaunch() const { return nTargetSpacingSlowLaunch; }
+
+    /** MaxMoneyOut Fix */
     CAmount MaxMoneyOut() const { return nMaxMoneyOut; }
+    CAmount MaxMoneyOutLegacy() const { return nMaxMoneyOutLegacy; }
+    /** money travels bag faces */
+    CAmount GetMaxMoneyOut(int nHeight) {
+        CAmount max = MaxMoneyOut();
+        CAmount maxLegacy = MaxMoneyOutLegacy();
+        int nStartHeight = SupplyChangeStartHeight();
+        if (nHeight >= nStartHeight) {
+          return max;
+        } else {
+          return maxLegacy;
+        }
+    }
+
+    /** Block Height to enable Changes for max supply fix and consensus changes */
+    int SupplyChangeStartHeight() const { return nSupplyChangeStartHeight; }
 
     /** The masternode count that we will allow the see-saw reward payments to be off by */
     int MasternodeCountDrift() const { return nMasternodeCountDrift; }
@@ -171,7 +189,7 @@ protected:
     //New Time
     int64_t nTargetTimespan;
     int64_t nTargetSpacing;
-    int nDisableLegacyTimeHeight;
+    int nSupplyChangeStartHeight;
     int64_t nTargetSpacingSlowLaunch;
     int nLastPOWBlock;
     int nMasternodeCountDrift;

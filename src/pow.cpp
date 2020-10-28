@@ -42,10 +42,9 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast)
         int64_t nInterval = Params().IntervalLegacy();
 
         // New time activation check
-        bool bVerAct = CBlockIndex::IsSuperMajority(7, pindexLast, Params().RejectBlockOutdatedMajority());
         bool bHeightReach = pindexLast->nHeight >= Params().DisableLegacyTimeHeight();
-        // Actiavte on 95% upgrade threshold, or forced by block height set.
-        if (bVerAct || bHeightReach) {
+        // Actiavte by block height set.
+        if (bHeightReach) {
           nTargetSpacing = Params().TargetSpacing();
           nTargetTimespan = Params().TargetTimespan();
           nInterval = Params().Interval();

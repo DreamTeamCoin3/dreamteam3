@@ -986,7 +986,8 @@ bool GetCoinAge(const CTransaction& tx, const unsigned int nTxTime, uint64_t& nC
 
 bool MoneyRange(CAmount nValueOut)
 {
-    return nValueOut >= 0 && nValueOut <= Params().MaxMoneyOut();
+    const int nBlockHeight = chainActive.Height();
+    return nValueOut >= 0 && nValueOut <= Params().GetMaxMoneyOut(nBlockHeight);
 }
 
 int GetZerocoinStartHeight()
@@ -1422,6 +1423,8 @@ bool CheckTransaction(const CTransaction& tx, bool fZerocoinActive, bool fReject
     // Check for negative or overflow output values
     CAmount nValueOut = 0;
     int nZCSpendCount = 0;
+    int nChainHeight = chainActive.Height();
+    CAmount nMaxMoneyOut = Params().GetMaxMoneyOut(nChainHeight);
     BOOST_FOREACH (const CTxOut& txout, tx.vout) {
         if (txout.IsEmpty() && !tx.IsCoinBase() && !tx.IsCoinStake())
             return state.DoS(100, error("CheckTransaction(): txout empty for user transaction"));
@@ -1429,7 +1432,7 @@ bool CheckTransaction(const CTransaction& tx, bool fZerocoinActive, bool fReject
         if (txout.nValue < 0)
             return state.DoS(100, error("CheckTransaction() : txout.nValue negative"),
                 REJECT_INVALID, "bad-txns-vout-negative");
-        if (txout.nValue > Params().MaxMoneyOut())
+        if (txout.nValue > nMaxMoneyOut)
             return state.DoS(100, error("CheckTransaction() : txout.nValue too high"),
                 REJECT_INVALID, "bad-txns-vout-toolarge");
         nValueOut += txout.nValue;
@@ -1548,8 +1551,10 @@ CAmount GetMinRelayFee(const CTransaction& tx, unsigned int nBytes, bool fAllowF
             nMinFee = 0;
     }
 
-    if (!MoneyRange(nMinFee))
-        nMinFee = Params().MaxMoneyOut();
+    if (!MoneyRange(nMinFee)) {
+        int nChainHeight = chainActive.Height();
+        nMinFee = Params().GetMaxMoneyOut(nChainHeight);
+    }
     return nMinFee;
 }
 
@@ -2125,9 +2130,9 @@ int64_t GetBlockValue(int nHeight)
     int64_t nSubsidy = 0;
 
       if (nHeight == 0) {
-	nSubsidy = 4000000 * COIN;
+        nSubsidy = 4000000 * COIN;
       } else if (nHeight <= 10000 && nHeight > 0) {
-	nSubsidy = 10 * COIN;
+        nSubsidy = 10 * COIN;
       } else if (nHeight <= 40000 && nHeight > 10000) {
         nSubsidy = 20 * COIN;
       } else if (nHeight <= 70000 && nHeight > 40000) {
@@ -2140,50 +2145,29 @@ int64_t GetBlockValue(int nHeight)
         nSubsidy = 30 * COIN;
       } else if (nHeight <= 500000 && nHeight > 250000) {
         nSubsidy = 25 * COIN;
-      } else if (nHeight <= 2000000 && nHeight > 500000) {
+      } else if (nHeight <= Params().SupplyChangeStartHeight() && nHeight > 500000) {
         nSubsidy = 20 * COIN;
-      //Blocktime should be set to agreed blocktime on fix release and this comment line should be deleted
-      } else if (nHeight >= 3000000) {
-        nSubsidy = 3 * COIN;
+      } else if (nHeight > Params().SupplyChangeStartHeight()) {
+        nSubsidy = 3 * COIN; // TODO: Determine new base reward value.
       } else {
-	nSubsidy = 1 * COIN;
+        nSubsidy = 1 * COIN;
       }
 
-  	int64_t nMoneySupply = chainActive.Tip()->nMoneySupply;
+      int64_t nMoneySupply = chainActive.Tip()->nMoneySupply;
 
-    //Blocktime should be set to agreed blocktime on fix release and this comment line should be deleted
-  	if (nHeight >= 3000000) {
-  	nMoneySupply + nSubsidy >= Params().MaxMoneyOut();
-  	} else (nMoneySupply + nSubsidy >= Params().MaxMoneyOutLegacy()); {
-  		nSubsidy = Params().MaxMoneyOutLegacy() - nMoneySupply;
-  		}
+      if (nMoneySupply >= Params().GetMaxMoneyOut(nHeight)) {
+          nSubsidy = 0;
+      }
 
-
-  	if (nMoneySupply >= Params().MaxMoneyOut())
-  		nSubsidy = 0;
-
-  	return nSubsidy;
+      return nSubsidy;
 }
-
-/**int64_t GetBlockValue(int nHeight)
-{
-    int64_t timespan = TargetTimespan();
-    int64_t timespanLegacy = TargetTimespanLegacy();
-
-    if (nHeight >= 300000) {
-    return timespan;
-    } else {
-    return timespanLegacy;
-    }
-}
-**/
 
 int64_t GetMasternodePayment(int nHeight, int64_t blockValue, int nMasternodeCount)
 {
     int64_t ret = 0;
 
       if (nHeight <= 300) {
-	ret = blockValue  / 100 * 0;
+        ret = blockValue  / 100 * 0;
       } else if (nHeight <= 10000 && nHeight > 300) {
         ret = blockValue  / 100 * 70;
       } else if (nHeight <= 40000 && nHeight > 10000) {
@@ -3057,26 +3041,26 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             return state.Abort("Failed to write transaction index");
 
     if(IsSporkActive(SPORK_17_FAKE_STAKE_FIX) && block.GetBlockTime() >= GetSporkValue(SPORK_17_FAKE_STAKE_FIX)){
-		// add new entries
-		for (const CTransaction tx : block.vtx) {
-			if (tx.IsCoinBase())
-				continue;
-			for (const CTxIn in : tx.vin) {
-				LogPrint("map", "mapStakeSpent: Insert %s | %u\n", in.prevout.ToString(), pindex->nHeight);
-				mapStakeSpent.insert(std::make_pair(in.prevout, pindex->nHeight));
-			}
-		}
+        // add new entries
+        for (const CTransaction tx : block.vtx) {
+            if (tx.IsCoinBase())
+                continue;
+            for (const CTxIn in : tx.vin) {
+                LogPrint("map", "mapStakeSpent: Insert %s | %u\n", in.prevout.ToString(), pindex->nHeight);
+                mapStakeSpent.insert(std::make_pair(in.prevout, pindex->nHeight));
+            }
+        }
 
-		// delete old entries
-		for (auto it = mapStakeSpent.begin(); it != mapStakeSpent.end();) {
-			if (it->second < pindex->nHeight - Params().MaxReorganizationDepth()) {
-				LogPrint("map", "mapStakeSpent: Erase %s | %u\n", it->first.ToString(), it->second);
-				it = mapStakeSpent.erase(it);
-			}
-			else {
-				it++;
-			}
-		}
+        // delete old entries
+        for (auto it = mapStakeSpent.begin(); it != mapStakeSpent.end();) {
+            if (it->second < pindex->nHeight - Params().MaxReorganizationDepth()) {
+                LogPrint("map", "mapStakeSpent: Erase %s | %u\n", it->first.ToString(), it->second);
+                it = mapStakeSpent.erase(it);
+            }
+            else {
+                it++;
+            }
+        }
     }
 
     // add this block to the view's block chain
@@ -3957,33 +3941,33 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
             if (block.vtx[i].IsCoinStake())
                 return state.DoS(100, error("CheckBlock() : more than one coinstake"));
 
-	if(IsSporkActive(SPORK_17_FAKE_STAKE_FIX) && block.GetBlockTime() >= GetSporkValue(SPORK_17_FAKE_STAKE_FIX)) {
+    if(IsSporkActive(SPORK_17_FAKE_STAKE_FIX) && block.GetBlockTime() >= GetSporkValue(SPORK_17_FAKE_STAKE_FIX)) {
 
-	        //additional check against false PoS attack
+            //additional check against false PoS attack
 
-		// Check for coin age.
-		// First try finding the previous transaction in database.
-		CTransaction txPrev;
-		uint256 hashBlockPrev;
-		if (!GetTransaction(block.vtx[1].vin[0].prevout.hash, txPrev, hashBlockPrev, true))
-			return state.DoS(100, error("CheckBlock() : stake failed to find vin transaction"));
-		// Find block in map.
-		CBlockIndex* pindex = NULL;
-		BlockMap::iterator it = mapBlockIndex.find(hashBlockPrev);
-		if (it != mapBlockIndex.end())
-			pindex = it->second;
-		else
-			return state.DoS(100, error("CheckBlock() :  stake failed to find block index"));
-		// Check block time vs stake age requirement.
-		if (pindex->GetBlockHeader().nTime + nStakeMinAge > GetAdjustedTime())
-			return state.DoS(100, error("CheckBlock() : stake under min. stake age"));
+        // Check for coin age.
+        // First try finding the previous transaction in database.
+        CTransaction txPrev;
+        uint256 hashBlockPrev;
+        if (!GetTransaction(block.vtx[1].vin[0].prevout.hash, txPrev, hashBlockPrev, true))
+            return state.DoS(100, error("CheckBlock() : stake failed to find vin transaction"));
+        // Find block in map.
+        CBlockIndex* pindex = NULL;
+        BlockMap::iterator it = mapBlockIndex.find(hashBlockPrev);
+        if (it != mapBlockIndex.end())
+            pindex = it->second;
+        else
+            return state.DoS(100, error("CheckBlock() :  stake failed to find block index"));
+        // Check block time vs stake age requirement.
+        if (pindex->GetBlockHeader().nTime + nStakeMinAge > GetAdjustedTime())
+            return state.DoS(100, error("CheckBlock() : stake under min. stake age"));
 
-		// Check that the prev. stake block has required confirmations by height.
-		LogPrintf("CheckBlock() : height=%d stake_tx_height=%d required_confirmations=%d got=%d\n", chainActive.Tip()->nHeight, pindex->nHeight, STAKE_MIN_CONF, chainActive.Tip()->nHeight - pindex->nHeight);
-		if (chainActive.Tip()->nHeight - pindex->nHeight < STAKE_MIN_CONF)
-			return state.DoS(100, error("CheckBlock() : stake under min. required confirmations"));
+        // Check that the prev. stake block has required confirmations by height.
+        LogPrintf("CheckBlock() : height=%d stake_tx_height=%d required_confirmations=%d got=%d\n", chainActive.Tip()->nHeight, pindex->nHeight, STAKE_MIN_CONF, chainActive.Tip()->nHeight - pindex->nHeight);
+        if (chainActive.Tip()->nHeight - pindex->nHeight < STAKE_MIN_CONF)
+            return state.DoS(100, error("CheckBlock() : stake under min. required confirmations"));
 
-	}
+    }
 
     }
 
@@ -4276,54 +4260,54 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
 
     if(IsSporkActive(SPORK_17_FAKE_STAKE_FIX) && block.GetBlockTime() >= GetSporkValue(SPORK_17_FAKE_STAKE_FIX)) {
 
-		if (block.IsProofOfStake()) {
-			LOCK(cs_main);
+        if (block.IsProofOfStake()) {
+            LOCK(cs_main);
 
-			CCoinsViewCache coins(pcoinsTip);
+            CCoinsViewCache coins(pcoinsTip);
 
-			if (!coins.HaveInputs(block.vtx[1])) {
-				LOCK(cs_mapstake);
-				// the inputs are spent at the chain tip so we should look at the recently spent outputs
+            if (!coins.HaveInputs(block.vtx[1])) {
+                LOCK(cs_mapstake);
+                // the inputs are spent at the chain tip so we should look at the recently spent outputs
 
-				for (CTxIn in : block.vtx[1].vin) {
-					auto it = mapStakeSpent.find(in.prevout);
-					if (it == mapStakeSpent.end()) {
-						return false;
-					}
-					if (it->second < pindexPrev->nHeight) {
-						return false;
-					}
-				}
-			}
+                for (CTxIn in : block.vtx[1].vin) {
+                    auto it = mapStakeSpent.find(in.prevout);
+                    if (it == mapStakeSpent.end()) {
+                        return false;
+                    }
+                    if (it->second < pindexPrev->nHeight) {
+                        return false;
+                    }
+                }
+            }
 
-			// if this is on a fork
-			if (!chainActive.Contains(pindexPrev) && pindexPrev != NULL) {
-				// start at the block we're adding on to
-				CBlockIndex *last = pindexPrev;
+            // if this is on a fork
+            if (!chainActive.Contains(pindexPrev) && pindexPrev != NULL) {
+                // start at the block we're adding on to
+                CBlockIndex *last = pindexPrev;
 
-				//while that block is not on the main chain
-				while (!chainActive.Contains(last) && last != NULL) {
-					CBlock bl;
-					ReadBlockFromDisk(bl, last);
-					// loop through every spent input from said block
-					for (CTransaction t : bl.vtx) {
-						for (CTxIn in : t.vin) {
-							// loop through every spent input in the staking transaction of the new block
-							for (CTxIn stakeIn : block.vtx[1].vin) {
-								// if they spend the same input
-								if (stakeIn.prevout == in.prevout) {
-									//reject the block
-									return false;
-								}
-							}
-						}
-					}
+                //while that block is not on the main chain
+                while (!chainActive.Contains(last) && last != NULL) {
+                    CBlock bl;
+                    ReadBlockFromDisk(bl, last);
+                    // loop through every spent input from said block
+                    for (CTransaction t : bl.vtx) {
+                        for (CTxIn in : t.vin) {
+                            // loop through every spent input in the staking transaction of the new block
+                            for (CTxIn stakeIn : block.vtx[1].vin) {
+                                // if they spend the same input
+                                if (stakeIn.prevout == in.prevout) {
+                                    //reject the block
+                                    return false;
+                                }
+                            }
+                        }
+                    }
 
-					// go to the parent block
-					last = last->pprev;
-				}
-			}
-		}
+                    // go to the parent block
+                    last = last->pprev;
+                }
+            }
+        }
 
     }
 
