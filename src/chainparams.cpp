@@ -121,7 +121,7 @@ public:
         nMaxMoneyOutLegacy = 24000000 * COIN;
         nMaxMoneyOut = 100000000 * COIN;
         //Height to change consensus rule for fix..
-        nSupplyChangeStartHeight = 3000000; // TODO: Determine start height
+        nSupplyChangeStartHeight = 847302; // 12 Nov 2020
         nLastPOWBlock = 300;
         nModifierUpdateBlock = 999999999;
         nZerocoinStartHeight = 999999999;
