@@ -109,7 +109,7 @@ public:
         nToCheckBlockUpgradeMajority = 1000;
         nMinerThreads = 0;
         //Legacy Time
-        nTargetTimespanLegacy = 1 * 60; // DreamTeam3: 1 day
+        nTargetTimespanLegacy = 1 * 60 * 40; // DreamTeam3: 1 day
         nTargetSpacingLegacy = 1 * 60;  // DreamTeam3: 1 minute
         //New Time
         nTargetTimespan = 1 * 60 * 60 * 2; // DreamTeam3: 120 minutes
