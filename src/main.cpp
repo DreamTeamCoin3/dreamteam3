@@ -2152,6 +2152,7 @@ int64_t GetBlockValue(int nHeight)
         nSubsidy = 15 * COIN;
     } else if (nHeight <= 963656 && nHeight > 876391) {
         nSubsidy = 10 * COIN;
+    /* todo: the below may need to be reworked on later but we have a long time till block 22mm*/
     } else if (nHeight <= 22000000 && nHeight > 963656) {
         /* Last Inflation Rate Change about Sept 12 2021 */
         nSubsidy = 5 * COIN;
