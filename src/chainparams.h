@@ -73,12 +73,62 @@ public:
     bool SkipProofOfWorkCheck() const { return fSkipProofOfWorkCheck; }
     /** Make standard checks */
     bool RequireStandard() const { return fRequireStandard; }
+
+    /** Target Timespan */
     int64_t TargetTimespan() const { return nTargetTimespan; }
+    int64_t TargetTimespanLegacy() const { return nTargetTimespanLegacy; }
+    /** Get Target Timespan */
+    int64_t GetTimeSpan(int nHeight) const {
+        int64_t timespan = TargetTimespan();
+        int64_t timespanLegacy = TargetTimespanLegacy();
+        int nStartHeight = SupplyChangeStartHeight();
+        if (nHeight >= nStartHeight) {
+          return timespan;
+        } else {
+          return timespanLegacy;
+        }
+    }
+
+    /** Target block time spacing */
     int64_t TargetSpacing() const { return nTargetSpacing; }
-    int64_t TargetSpacingSlowLaunch() const { return nTargetSpacingSlowLaunch; }
-    int64_t Interval() const { return nTargetTimespan / nTargetSpacing; }
+    int64_t TargetSpacingLegacy() const { return nTargetSpacingLegacy; }
+    /** times travels face bags */
+    int64_t GetTargetSpacing(int nHeight) const {
+        int64_t targetspacing = TargetSpacing();
+        int64_t targetspacingLegacy = TargetSpacingLegacy();
+        int nStartHeight = SupplyChangeStartHeight();
+        if (nHeight >= nStartHeight) {
+          return targetspacing;
+        } else {
+          return targetspacingLegacy;
+        }
+    }
+
+    /** Majurity Checks */
     int COINBASE_MATURITY() const { return nMaturity; }
+    /** Target blocktime Interval */
+    int64_t Interval() const { return nTargetTimespan / nTargetSpacing; }
+    int64_t IntervalLegacy() const { return nTargetTimespanLegacy / nTargetSpacingLegacy; }
+    int64_t TargetSpacingSlowLaunch() const { return nTargetSpacingSlowLaunch; }
+
+    /** MaxMoneyOut Fix */
     CAmount MaxMoneyOut() const { return nMaxMoneyOut; }
+    CAmount MaxMoneyOutLegacy() const { return nMaxMoneyOutLegacy; }
+    /** money travels bag faces */
+    CAmount GetMaxMoneyOut(int nHeight) const {
+        CAmount max = MaxMoneyOut();
+        CAmount maxLegacy = MaxMoneyOutLegacy();
+        int nStartHeight = SupplyChangeStartHeight();
+        if (nHeight >= nStartHeight) {
+          return max;
+        } else {
+          return maxLegacy;
+        }
+    }
+
+    /** Block Height to enable Changes for max supply fix and consensus changes */
+    int SupplyChangeStartHeight() const { return nSupplyChangeStartHeight; }
+
     /** The masternode count that we will allow the see-saw reward payments to be off by */
     int MasternodeCountDrift() const { return nMasternodeCountDrift; }
     /** Make miner stop after a block is found. In RPC, don't return until nGenProcLimit blocks are generated */
@@ -133,13 +183,19 @@ protected:
     int nEnforceBlockUpgradeMajority;
     int nRejectBlockOutdatedMajority;
     int nToCheckBlockUpgradeMajority;
+    //Legacy Time
+    int64_t nTargetTimespanLegacy;
+    int64_t nTargetSpacingLegacy;
+    //New Time
     int64_t nTargetTimespan;
     int64_t nTargetSpacing;
+    int nSupplyChangeStartHeight;
     int64_t nTargetSpacingSlowLaunch;
     int nLastPOWBlock;
     int nMasternodeCountDrift;
     int nMaturity;
     int nModifierUpdateBlock;
+    CAmount nMaxMoneyOutLegacy;
     CAmount nMaxMoneyOut;
     int nMinerThreads;
     std::vector<CDNSSeedData> vSeeds;

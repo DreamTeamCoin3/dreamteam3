@@ -54,11 +54,19 @@ static void convertSeed6(std::vector<CAddress>& vSeedsOut, const SeedSpec6* data
 // + Contains no strange transactions
 static Checkpoints::MapCheckpoints mapCheckpoints =
     boost::assign::map_list_of
-    (0, uint256("0x00000a1205b44eec30c1ee6015262ba47d1950b1d0b143f9cecb6de97f234e5a"));
+    (0, uint256("0x00000a1205b44eec30c1ee6015262ba47d1950b1d0b143f9cecb6de97f234e5a"))
+    (250005, uint256("0x65a8a519d1f383eee06f89ba7626808d20cc562bf75c8458f4526cda9c6a647f"))
+    (499997, uint256("0xb592e2ed2083e8629db4b19bc2226f46afe159623e76002f220fdfa45e6ca594"))
+    (500000, uint256("0xe5bf623040cf4302e2b2096f13cb739a6055c2335b19bc9e46a3e2d0910e149b"))
+    (672505, uint256("0x27b19cb612bd89a449f777223042a856259ab2a022be3c41e1cb2b13bd58b8b8"))
+    (800008, uint256("0x6eb8f10316e77d59d6eaee39579ce28e92188002c624eeea58d6a50139f35772"))
+    (808000, uint256("0x87fff0011f5f37ec5d996fd1904f1fd4ab6c1e8ce1d4e8678b7fb2471bab12a6"))
+    (802000, uint256("0x3ae047ccc0d8064941c84b6b6d7213c7adeb5d36e90feafb7364cd845a816d6b"))
+    (826908, uint256("0x2b92a707d55b777594836125a25c7066ed6f352721862b0892bad9ffe63cb76e"));
 static const Checkpoints::CCheckpointData data = {
     &mapCheckpoints,
-    1553490138, // * UNIX timestamp of last checkpoint block
-    0,    // * total number of transactions between genesis and last checkpoint
+    1603947098, // * UNIX timestamp of last checkpoint block
+    1693227,    // * total number of transactions between genesis and last checkpoint
                 //   (the tx=... number in the SetBestChain debug.log lines)
     2000        // * estimated number of transactions per day after checkpoint
 };
@@ -108,12 +116,20 @@ public:
         nRejectBlockOutdatedMajority = 950;
         nToCheckBlockUpgradeMajority = 1000;
         nMinerThreads = 0;
-        nTargetTimespan = 1 * 60;
+        //Legacy Time
+        nTargetTimespanLegacy = 1 * 60 * 40; // DreamTeam3: 40 minutes
+        nTargetSpacingLegacy = 1 * 60;  // DreamTeam3: 1 minute
+        //New Time
+        nTargetTimespan = 1 * 60 * 60 * 2; // DreamTeam3: 120 minutes
+        nTargetSpacing = 1 * 60 * 5;  // DreamTeam3: 300 seconds
         nTargetSpacingSlowLaunch = 1 * 60;
-        nTargetSpacing = 1 * 60;
         nMaturity = 29;
         nMasternodeCountDrift = 20;
-        nMaxMoneyOut = 24000000 * COIN;
+        //LastMoneyOut fix
+        nMaxMoneyOutLegacy = 24000000 * COIN;
+        nMaxMoneyOut = 100000000 * COIN;
+        //Height to change consensus rule for fix..
+        nSupplyChangeStartHeight = 847302; // 12 Nov 2020
         nLastPOWBlock = 300;
         nModifierUpdateBlock = 999999999;
         nZerocoinStartHeight = 999999999;
@@ -142,8 +158,15 @@ public:
         assert(hashGenesisBlock == uint256("0x00000a1205b44eec30c1ee6015262ba47d1950b1d0b143f9cecb6de97f234e5a"));
         assert(genesis.hashMerkleRoot == uint256("0x0255bd06c554406c99efc0b7732e560c9c5a4d49d7b5ea3d17e66737a777b965"));
 
-	vSeeds.push_back(CDNSSeedData("95.179.133.32", "95.179.133.32"));
-        vSeeds.push_back(CDNSSeedData("199.247.29.76", "199.247.29.76"));
+        vSeeds.push_back(CDNSSeedData("dns.dt3.xyz", "dns.dt3.xyz"));
+        vSeeds.push_back(CDNSSeedData("dt3-explorer.xyz", "dt3-explorer.xyz"));
+        //vSeeds.push_back(CDNSSeedData("95.179.133.32", "95.179.133.32")); // no response
+        //vSeeds.push_back(CDNSSeedData("199.247.29.76", "199.247.29.76")); // no response
+        vSeeds.push_back(CDNSSeedData("nl.dt3.xyz", "nl.dt3.xyz"));
+        vSeeds.push_back(CDNSSeedData("us.dt3.xyz", "us.dt3.xyz"));
+        vSeeds.push_back(CDNSSeedData("uk.dt3.xyz", "uk.dt3.xyz"));
+        vSeeds.push_back(CDNSSeedData("si.dt3.xyz", "si.dt3.xyz"));
+        vSeeds.push_back(CDNSSeedData("jp.dt3.xyz", "jp.dt3.xyz"));
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1, 5); // 3
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1, 30); // D
@@ -165,7 +188,7 @@ public:
         fHeadersFirstSyncingActive = false;
 
         nPoolMaxTransactions = 3;
-	strSporkKey = "04624DA8CE5519338594A322474391D3C89A0C4A2DE1B3C95BE5091853462C4FDC03539286B40A0247EC5DB3CA674DC1FF33DB611531CDFAC7B1C9BFD36DBB2C07";
+        strSporkKey = "04624DA8CE5519338594A322474391D3C89A0C4A2DE1B3C95BE5091853462C4FDC03539286B40A0247EC5DB3CA674DC1FF33DB611531CDFAC7B1C9BFD36DBB2C07";
         strObfuscationPoolDummyAddress = "3HwKnkBg9SAcAMNjiPYGPqeiik8hk4UX44";
         nStartMasternodePayments = 1553490138;
 
