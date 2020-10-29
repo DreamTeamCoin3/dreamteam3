@@ -986,7 +986,8 @@ bool GetCoinAge(const CTransaction& tx, const unsigned int nTxTime, uint64_t& nC
 
 bool MoneyRange(CAmount nValueOut)
 {
-    return nValueOut >= 0 && nValueOut <= Params().MaxMoneyOut();
+    const int nHeight = chainActive.Height();
+    return nValueOut >= 0 && nValueOut <= Params().GetMaxMoneyOut(nHeight);
 }
 
 int GetZerocoinStartHeight()
@@ -1422,6 +1423,8 @@ bool CheckTransaction(const CTransaction& tx, bool fZerocoinActive, bool fReject
     // Check for negative or overflow output values
     CAmount nValueOut = 0;
     int nZCSpendCount = 0;
+    int nHeight = chainActive.Height();
+    CAmount nMaxMoneyOut = Params().GetMaxMoneyOut(nHeight);
     BOOST_FOREACH (const CTxOut& txout, tx.vout) {
         if (txout.IsEmpty() && !tx.IsCoinBase() && !tx.IsCoinStake())
             return state.DoS(100, error("CheckTransaction(): txout empty for user transaction"));
@@ -1429,7 +1432,7 @@ bool CheckTransaction(const CTransaction& tx, bool fZerocoinActive, bool fReject
         if (txout.nValue < 0)
             return state.DoS(100, error("CheckTransaction() : txout.nValue negative"),
                 REJECT_INVALID, "bad-txns-vout-negative");
-        if (txout.nValue > Params().MaxMoneyOut())
+        if (txout.nValue > nMaxMoneyOut)
             return state.DoS(100, error("CheckTransaction() : txout.nValue too high"),
                 REJECT_INVALID, "bad-txns-vout-toolarge");
         nValueOut += txout.nValue;
@@ -1548,8 +1551,10 @@ CAmount GetMinRelayFee(const CTransaction& tx, unsigned int nBytes, bool fAllowF
             nMinFee = 0;
     }
 
-    if (!MoneyRange(nMinFee))
-        nMinFee = Params().MaxMoneyOut();
+    if (!MoneyRange(nMinFee)) {
+        int nHeight = chainActive.Height();
+        nMinFee = Params().GetMaxMoneyOut(nHeight);
+    }
     return nMinFee;
 }
 
@@ -2123,66 +2128,77 @@ double ConvertBitsToDouble(unsigned int nBits)
 int64_t GetBlockValue(int nHeight)
 {
     int64_t nSubsidy = 0;
+    //int nSupplyUpdateHeight = Params().SupplyChangeStartHeight();
 
-      if (nHeight == 0) {
-	nSubsidy = 4000000 * COIN;
-      } else if (nHeight <= 10000 && nHeight > 0) {
-	nSubsidy = 10 * COIN;
-      } else if (nHeight <= 40000 && nHeight > 10000) {
+    if (nHeight == 0) {
+        nSubsidy = 4000000 * COIN;
+    } else if (nHeight <= 10000 && nHeight > 0) {
+        nSubsidy = 10 * COIN;
+    } else if (nHeight <= 40000 && nHeight > 10000) {
         nSubsidy = 20 * COIN;
-      } else if (nHeight <= 70000 && nHeight > 40000) {
+    } else if (nHeight <= 70000 && nHeight > 40000) {
         nSubsidy = 30 * COIN;
-      } else if (nHeight <= 100000 && nHeight > 70000) {
+    } else if (nHeight <= 100000 && nHeight > 70000) {
         nSubsidy = 40 * COIN;
-      } else if (nHeight <= 150000 && nHeight > 100000) {
+    } else if (nHeight <= 150000 && nHeight > 100000) {
         nSubsidy = 35 * COIN;
-      } else if (nHeight <= 250000 && nHeight > 150000) {
+    } else if (nHeight <= 250000 && nHeight > 150000) {
         nSubsidy = 30 * COIN;
-      } else if (nHeight <= 500000 && nHeight > 250000) {
+    } else if (nHeight <= 847302 && nHeight > 250000) {
         nSubsidy = 25 * COIN;
-      } else if (nHeight <= 2000000 && nHeight > 500000) {
-        nSubsidy = 20 * COIN;
-      } else {
-	nSubsidy = 0 * COIN;
-      }
+    } else if (nHeight <= 876391 && nHeight > 847302) {
+        nSubsidy = 15 * COIN;
+    } else if (nHeight <= 963656 && nHeight > 876391) {
+        nSubsidy = 10 * COIN;
+    } else if (nHeight <= 22000000 && nHeight > 963656) {
+        /* Last Inflation Rate Change about Sept 12 2021 */
+        nSubsidy = 5 * COIN;
+    } else {
+        nSubsidy = 1 * COIN;
+    }
 
-  	int64_t nMoneySupply = chainActive.Tip()->nMoneySupply;
+    CAmount nMoneySupply = chainActive.Tip()->nMoneySupply;
+    CAmount nMoneySupplyMax = Params().GetMaxMoneyOut(nHeight);
 
-	if (nMoneySupply + nSubsidy >= Params().MaxMoneyOut())
-  		nSubsidy = Params().MaxMoneyOut() - nMoneySupply;
+    // Assure money supply not exceeded
+    if (nMoneySupply + nSubsidy >= nMoneySupplyMax) {
+        nSubsidy = nMoneySupplyMax - nMoneySupply;
+        if (nSubsidy > 1) {
+            nSubsidy = 1;
+        }
+    }
+    if (nMoneySupply >= nMoneySupplyMax) {
+        nSubsidy = 0;
+    }
 
-  	if (nMoneySupply >= Params().MaxMoneyOut())
-  		nSubsidy = 0;
-
-  	return nSubsidy;
-
+    return nSubsidy;
 }
 
 int64_t GetMasternodePayment(int nHeight, int64_t blockValue, int nMasternodeCount)
 {
     int64_t ret = 0;
 
-      if (nHeight <= 300) {
-	ret = blockValue  / 100 * 0;
-      } else if (nHeight <= 10000 && nHeight > 300) {
-        ret = blockValue  / 100 * 70;
-      } else if (nHeight <= 40000 && nHeight > 10000) {
-        ret = blockValue  / 100 * 75;
-      } else if (nHeight <= 70000 && nHeight > 40000) {
-        ret = blockValue  / 100 * 80;
-      } else if (nHeight <= 100000 && nHeight > 70000) {
-        ret = blockValue  / 100 * 80;
-      } else if (nHeight <= 150000 && nHeight > 100000) {
-        ret = blockValue  / 100 * 85;
-      } else if (nHeight <= 250000 && nHeight > 150000) {
-        ret = blockValue  / 100 * 85;
-      } else if (nHeight <= 500000 && nHeight > 250000) {
-        ret = blockValue  / 100 * 80;
-      } else if (nHeight <= 2000000 && nHeight > 500000) {
-        ret = blockValue  / 100 * 70;
-      } else {
+    if (nHeight <= 300) {
         ret = blockValue  / 100 * 0;
-      }
+    } else if (nHeight <= 10000 && nHeight > 300) {
+        ret = blockValue  / 100 * 70;
+    } else if (nHeight <= 40000 && nHeight > 10000) {
+        ret = blockValue  / 100 * 75;
+    } else if (nHeight <= 70000 && nHeight > 40000) {
+        ret = blockValue  / 100 * 80;
+    } else if (nHeight <= 100000 && nHeight > 70000) {
+        ret = blockValue  / 100 * 80;
+    } else if (nHeight <= 150000 && nHeight > 100000) {
+        ret = blockValue  / 100 * 85;
+    } else if (nHeight <= 250000 && nHeight > 150000) {
+        ret = blockValue  / 100 * 85;
+    } else if (nHeight <= 500000 && nHeight > 250000) {
+        ret = blockValue  / 100 * 80;
+    } else if (nHeight <= 22000000 && nHeight > 500000) {
+        ret = blockValue  / 100 * 70;
+    } else {
+        ret = blockValue  / 100 * 0;
+    }
 
     return ret;
 }
@@ -3037,26 +3053,26 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             return state.Abort("Failed to write transaction index");
 
     if(IsSporkActive(SPORK_17_FAKE_STAKE_FIX) && block.GetBlockTime() >= GetSporkValue(SPORK_17_FAKE_STAKE_FIX)){
-		// add new entries
-		for (const CTransaction tx : block.vtx) {
-			if (tx.IsCoinBase())
-				continue;
-			for (const CTxIn in : tx.vin) {
-				LogPrint("map", "mapStakeSpent: Insert %s | %u\n", in.prevout.ToString(), pindex->nHeight);
-				mapStakeSpent.insert(std::make_pair(in.prevout, pindex->nHeight));
-			}
-		}
+        // add new entries
+        for (const CTransaction tx : block.vtx) {
+            if (tx.IsCoinBase())
+                continue;
+            for (const CTxIn in : tx.vin) {
+                LogPrint("map", "mapStakeSpent: Insert %s | %u\n", in.prevout.ToString(), pindex->nHeight);
+                mapStakeSpent.insert(std::make_pair(in.prevout, pindex->nHeight));
+            }
+        }
 
-		// delete old entries
-		for (auto it = mapStakeSpent.begin(); it != mapStakeSpent.end();) {
-			if (it->second < pindex->nHeight - Params().MaxReorganizationDepth()) {
-				LogPrint("map", "mapStakeSpent: Erase %s | %u\n", it->first.ToString(), it->second);
-				it = mapStakeSpent.erase(it);
-			}
-			else {
-				it++;
-			}
-		}
+        // delete old entries
+        for (auto it = mapStakeSpent.begin(); it != mapStakeSpent.end();) {
+            if (it->second < pindex->nHeight - Params().MaxReorganizationDepth()) {
+                LogPrint("map", "mapStakeSpent: Erase %s | %u\n", it->first.ToString(), it->second);
+                it = mapStakeSpent.erase(it);
+            }
+            else {
+                it++;
+            }
+        }
     }
 
     // add this block to the view's block chain
@@ -3937,33 +3953,33 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
             if (block.vtx[i].IsCoinStake())
                 return state.DoS(100, error("CheckBlock() : more than one coinstake"));
 
-	if(IsSporkActive(SPORK_17_FAKE_STAKE_FIX) && block.GetBlockTime() >= GetSporkValue(SPORK_17_FAKE_STAKE_FIX)) {
+    if(IsSporkActive(SPORK_17_FAKE_STAKE_FIX) && block.GetBlockTime() >= GetSporkValue(SPORK_17_FAKE_STAKE_FIX)) {
 
-	        //additional check against false PoS attack
+            //additional check against false PoS attack
 
-		// Check for coin age.
-		// First try finding the previous transaction in database.
-		CTransaction txPrev;
-		uint256 hashBlockPrev;
-		if (!GetTransaction(block.vtx[1].vin[0].prevout.hash, txPrev, hashBlockPrev, true))
-			return state.DoS(100, error("CheckBlock() : stake failed to find vin transaction"));
-		// Find block in map.
-		CBlockIndex* pindex = NULL;
-		BlockMap::iterator it = mapBlockIndex.find(hashBlockPrev);
-		if (it != mapBlockIndex.end())
-			pindex = it->second;
-		else
-			return state.DoS(100, error("CheckBlock() :  stake failed to find block index"));
-		// Check block time vs stake age requirement.
-		if (pindex->GetBlockHeader().nTime + nStakeMinAge > GetAdjustedTime())
-			return state.DoS(100, error("CheckBlock() : stake under min. stake age"));
+        // Check for coin age.
+        // First try finding the previous transaction in database.
+        CTransaction txPrev;
+        uint256 hashBlockPrev;
+        if (!GetTransaction(block.vtx[1].vin[0].prevout.hash, txPrev, hashBlockPrev, true))
+            return state.DoS(100, error("CheckBlock() : stake failed to find vin transaction"));
+        // Find block in map.
+        CBlockIndex* pindex = NULL;
+        BlockMap::iterator it = mapBlockIndex.find(hashBlockPrev);
+        if (it != mapBlockIndex.end())
+            pindex = it->second;
+        else
+            return state.DoS(100, error("CheckBlock() :  stake failed to find block index"));
+        // Check block time vs stake age requirement.
+        if (pindex->GetBlockHeader().nTime + nStakeMinAge > GetAdjustedTime())
+            return state.DoS(100, error("CheckBlock() : stake under min. stake age"));
 
-		// Check that the prev. stake block has required confirmations by height.
-		LogPrintf("CheckBlock() : height=%d stake_tx_height=%d required_confirmations=%d got=%d\n", chainActive.Tip()->nHeight, pindex->nHeight, STAKE_MIN_CONF, chainActive.Tip()->nHeight - pindex->nHeight);
-		if (chainActive.Tip()->nHeight - pindex->nHeight < STAKE_MIN_CONF)
-			return state.DoS(100, error("CheckBlock() : stake under min. required confirmations"));
+        // Check that the prev. stake block has required confirmations by height.
+        LogPrintf("CheckBlock() : height=%d stake_tx_height=%d required_confirmations=%d got=%d\n", chainActive.Tip()->nHeight, pindex->nHeight, STAKE_MIN_CONF, chainActive.Tip()->nHeight - pindex->nHeight);
+        if (chainActive.Tip()->nHeight - pindex->nHeight < STAKE_MIN_CONF)
+            return state.DoS(100, error("CheckBlock() : stake under min. required confirmations"));
 
-	}
+    }
 
     }
 
@@ -4256,54 +4272,54 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
 
     if(IsSporkActive(SPORK_17_FAKE_STAKE_FIX) && block.GetBlockTime() >= GetSporkValue(SPORK_17_FAKE_STAKE_FIX)) {
 
-		if (block.IsProofOfStake()) {
-			LOCK(cs_main);
+        if (block.IsProofOfStake()) {
+            LOCK(cs_main);
 
-			CCoinsViewCache coins(pcoinsTip);
+            CCoinsViewCache coins(pcoinsTip);
 
-			if (!coins.HaveInputs(block.vtx[1])) {
-				LOCK(cs_mapstake);
-				// the inputs are spent at the chain tip so we should look at the recently spent outputs
+            if (!coins.HaveInputs(block.vtx[1])) {
+                LOCK(cs_mapstake);
+                // the inputs are spent at the chain tip so we should look at the recently spent outputs
 
-				for (CTxIn in : block.vtx[1].vin) {
-					auto it = mapStakeSpent.find(in.prevout);
-					if (it == mapStakeSpent.end()) {
-						return false;
-					}
-					if (it->second < pindexPrev->nHeight) {
-						return false;
-					}
-				}
-			}
+                for (CTxIn in : block.vtx[1].vin) {
+                    auto it = mapStakeSpent.find(in.prevout);
+                    if (it == mapStakeSpent.end()) {
+                        return false;
+                    }
+                    if (it->second < pindexPrev->nHeight) {
+                        return false;
+                    }
+                }
+            }
 
-			// if this is on a fork
-			if (!chainActive.Contains(pindexPrev) && pindexPrev != NULL) {
-				// start at the block we're adding on to
-				CBlockIndex *last = pindexPrev;
+            // if this is on a fork
+            if (!chainActive.Contains(pindexPrev) && pindexPrev != NULL) {
+                // start at the block we're adding on to
+                CBlockIndex *last = pindexPrev;
 
-				//while that block is not on the main chain
-				while (!chainActive.Contains(last) && last != NULL) {
-					CBlock bl;
-					ReadBlockFromDisk(bl, last);
-					// loop through every spent input from said block
-					for (CTransaction t : bl.vtx) {
-						for (CTxIn in : t.vin) {
-							// loop through every spent input in the staking transaction of the new block
-							for (CTxIn stakeIn : block.vtx[1].vin) {
-								// if they spend the same input
-								if (stakeIn.prevout == in.prevout) {
-									//reject the block
-									return false;
-								}
-							}
-						}
-					}
+                //while that block is not on the main chain
+                while (!chainActive.Contains(last) && last != NULL) {
+                    CBlock bl;
+                    ReadBlockFromDisk(bl, last);
+                    // loop through every spent input from said block
+                    for (CTransaction t : bl.vtx) {
+                        for (CTxIn in : t.vin) {
+                            // loop through every spent input in the staking transaction of the new block
+                            for (CTxIn stakeIn : block.vtx[1].vin) {
+                                // if they spend the same input
+                                if (stakeIn.prevout == in.prevout) {
+                                    //reject the block
+                                    return false;
+                                }
+                            }
+                        }
+                    }
 
-					// go to the parent block
-					last = last->pprev;
-				}
-			}
-		}
+                    // go to the parent block
+                    last = last->pprev;
+                }
+            }
+        }
 
     }
 
@@ -6358,7 +6374,7 @@ int ActiveProtocol()
     // SPORK_15 is used for 70911. Nodes < 70911 don't see it and still get their protocol version via SPORK_14 and their
     // own ModifierUpgradeBlock()
 
-    if (IsSporkActive(SPORK_15_NEW_PROTOCOL_ENFORCEMENT_2))
+    if (IsSporkActive(SPORK_14_NEW_PROTOCOL_ENFORCEMENT))
             return MIN_PEER_PROTO_VERSION_AFTER_ENFORCEMENT;
     return MIN_PEER_PROTO_VERSION_BEFORE_ENFORCEMENT;
 }
@@ -6650,7 +6666,8 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
         // timeout. We compensate for in-flight blocks to prevent killing off peers due to our own downstream link
         // being saturated. We only count validated in-flight blocks so peers can't advertize nonexisting block hashes
         // to unreasonably increase our timeout.
-        if (!pto->fDisconnect && state.vBlocksInFlight.size() > 0 && state.vBlocksInFlight.front().nTime < nNow - 500000 * Params().TargetSpacing() * (4 + state.vBlocksInFlight.front().nValidatedQueuedBefore)) {
+        int nTargetSpacing = Params().GetTargetSpacing(chainActive.Height());
+        if (!pto->fDisconnect && state.vBlocksInFlight.size() > 0 && state.vBlocksInFlight.front().nTime < nNow - 500000 * nTargetSpacing * (4 + state.vBlocksInFlight.front().nValidatedQueuedBefore)) {
             LogPrintf("Timeout downloading block %s from peer=%d, disconnecting\n", state.vBlocksInFlight.front().hash.ToString(), pto->id);
             pto->fDisconnect = true;
         }
