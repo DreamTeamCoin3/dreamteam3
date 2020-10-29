@@ -33,20 +33,20 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast)
         return Params().ProofOfWorkLimit().GetCompact();
     }
 
+    // Block time targeting
+    int64_t nTargetSpacing = Params().TargetSpacingLegacy();
+    //int64_t nTargetTimespan = Params().TargetTimespanLegacy();
+    int64_t nInterval = Params().IntervalLegacy();
+
     if (pindexLast->nHeight > Params().LAST_POW_BLOCK()) {
         uint256 bnTargetLimit = (~uint256(0) >> 24);
-
-        // Block time targeting
-        int64_t nTargetSpacing = Params().TargetSpacingLegacy();
-        int64_t nTargetTimespan = Params().TargetTimespanLegacy();
-        int64_t nInterval = Params().IntervalLegacy();
 
         // New time activation check
         bool bHeightReach = pindexLast->nHeight >= Params().SupplyChangeStartHeight();
         // Actiavte by block height set.
         if (bHeightReach) {
           nTargetSpacing = Params().TargetSpacing();
-          nTargetTimespan = Params().TargetTimespan();
+          //nTargetTimespan = Params().TargetTimespan();
           nInterval = Params().Interval();
         }
 
@@ -101,7 +101,7 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast)
 
     uint256 bnNew(PastDifficultyAverage);
 
-    int64_t _nTargetTimespan = CountBlocks * (pindexLast->nHeight > Params().LAST_POW_BLOCK() ? Params().TargetSpacing() : Params().TargetSpacingSlowLaunch());
+    int64_t _nTargetTimespan = CountBlocks * (pindexLast->nHeight > Params().LAST_POW_BLOCK() ? nTargetSpacing : Params().TargetSpacingSlowLaunch());
 
     if (nActualTimespan < _nTargetTimespan / 3)
         nActualTimespan = _nTargetTimespan / 3;

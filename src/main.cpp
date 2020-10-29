@@ -2128,68 +2128,77 @@ double ConvertBitsToDouble(unsigned int nBits)
 int64_t GetBlockValue(int nHeight)
 {
     int64_t nSubsidy = 0;
+    //int nSupplyUpdateHeight = Params().SupplyChangeStartHeight();
 
-      if (nHeight == 0) {
+    if (nHeight == 0) {
         nSubsidy = 4000000 * COIN;
-      } else if (nHeight <= 10000 && nHeight > 0) {
+    } else if (nHeight <= 10000 && nHeight > 0) {
         nSubsidy = 10 * COIN;
-      } else if (nHeight <= 40000 && nHeight > 10000) {
+    } else if (nHeight <= 40000 && nHeight > 10000) {
         nSubsidy = 20 * COIN;
-      } else if (nHeight <= 70000 && nHeight > 40000) {
+    } else if (nHeight <= 70000 && nHeight > 40000) {
         nSubsidy = 30 * COIN;
-      } else if (nHeight <= 100000 && nHeight > 70000) {
+    } else if (nHeight <= 100000 && nHeight > 70000) {
         nSubsidy = 40 * COIN;
-      } else if (nHeight <= 150000 && nHeight > 100000) {
+    } else if (nHeight <= 150000 && nHeight > 100000) {
         nSubsidy = 35 * COIN;
-      } else if (nHeight <= 250000 && nHeight > 150000) {
+    } else if (nHeight <= 250000 && nHeight > 150000) {
         nSubsidy = 30 * COIN;
-      } else if (nHeight <= 847302 && nHeight > 250000) {
+    } else if (nHeight <= 847302 && nHeight > 250000) {
         nSubsidy = 25 * COIN;
-      } else if (nHeight <= 876391 && nHeight > 847302) {
+    } else if (nHeight <= 876391 && nHeight > 847302) {
         nSubsidy = 15 * COIN;
-      } else if (nHeight <= 963656 && nHeight > 876391) {
+    } else if (nHeight <= 963656 && nHeight > 876391) {
         nSubsidy = 10 * COIN;
-      /** Last Inflation Rate Change about Sept 12 2021 **/
-      } else if (nHeight <= Params().SupplyChangeStartHeight() && nHeight > 963656) {
+    } else if (nHeight <= 22000000 && nHeight > 963656) {
+        /* Last Inflation Rate Change about Sept 12 2021 */
         nSubsidy = 5 * COIN;
-      } else {
+    } else {
         nSubsidy = 1 * COIN;
-      }
+    }
 
-      int64_t nMoneySupply = chainActive.Tip()->nMoneySupply;
+    CAmount nMoneySupply = chainActive.Tip()->nMoneySupply;
+    CAmount nMoneySupplyMax = Params().GetMaxMoneyOut(nHeight);
 
-      if (nMoneySupply >= Params().GetMaxMoneyOut(nHeight)) {
-          nSubsidy = 0;
-      }
+    // Assure money supply not exceeded
+    if (nMoneySupply + nSubsidy >= nMoneySupplyMax) {
+        nSubsidy = nMoneySupplyMax - nMoneySupply;
+        if (nSubsidy > 1) {
+            nSubsidy = 1;
+        }
+    }
+    if (nMoneySupply >= nMoneySupplyMax) {
+        nSubsidy = 0;
+    }
 
-      return nSubsidy;
+    return nSubsidy;
 }
 
 int64_t GetMasternodePayment(int nHeight, int64_t blockValue, int nMasternodeCount)
 {
     int64_t ret = 0;
 
-      if (nHeight <= 300) {
+    if (nHeight <= 300) {
         ret = blockValue  / 100 * 0;
-      } else if (nHeight <= 10000 && nHeight > 300) {
+    } else if (nHeight <= 10000 && nHeight > 300) {
         ret = blockValue  / 100 * 70;
-      } else if (nHeight <= 40000 && nHeight > 10000) {
+    } else if (nHeight <= 40000 && nHeight > 10000) {
         ret = blockValue  / 100 * 75;
-      } else if (nHeight <= 70000 && nHeight > 40000) {
+    } else if (nHeight <= 70000 && nHeight > 40000) {
         ret = blockValue  / 100 * 80;
-      } else if (nHeight <= 100000 && nHeight > 70000) {
+    } else if (nHeight <= 100000 && nHeight > 70000) {
         ret = blockValue  / 100 * 80;
-      } else if (nHeight <= 150000 && nHeight > 100000) {
+    } else if (nHeight <= 150000 && nHeight > 100000) {
         ret = blockValue  / 100 * 85;
-      } else if (nHeight <= 250000 && nHeight > 150000) {
+    } else if (nHeight <= 250000 && nHeight > 150000) {
         ret = blockValue  / 100 * 85;
-      } else if (nHeight <= 500000 && nHeight > 250000) {
+    } else if (nHeight <= 500000 && nHeight > 250000) {
         ret = blockValue  / 100 * 80;
-      } else if (nHeight <= 2000000 && nHeight > 500000) {
+    } else if (nHeight <= 22000000 && nHeight > 500000) {
         ret = blockValue  / 100 * 70;
-      } else {
+    } else {
         ret = blockValue  / 100 * 0;
-      }
+    }
 
     return ret;
 }
@@ -6657,7 +6666,8 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
         // timeout. We compensate for in-flight blocks to prevent killing off peers due to our own downstream link
         // being saturated. We only count validated in-flight blocks so peers can't advertize nonexisting block hashes
         // to unreasonably increase our timeout.
-        if (!pto->fDisconnect && state.vBlocksInFlight.size() > 0 && state.vBlocksInFlight.front().nTime < nNow - 500000 * Params().TargetSpacing() * (4 + state.vBlocksInFlight.front().nValidatedQueuedBefore)) {
+        int nTargetSpacing = Params().GetTargetSpacing(chainActive.Height());
+        if (!pto->fDisconnect && state.vBlocksInFlight.size() > 0 && state.vBlocksInFlight.front().nTime < nNow - 500000 * nTargetSpacing * (4 + state.vBlocksInFlight.front().nValidatedQueuedBefore)) {
             LogPrintf("Timeout downloading block %s from peer=%d, disconnecting\n", state.vBlocksInFlight.front().hash.ToString(), pto->id);
             pto->fDisconnect = true;
         }
