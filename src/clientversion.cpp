@@ -88,7 +88,12 @@ static std::string FormatVersion(int nVersion)
 
 std::string FormatFullVersion()
 {
-    return strprintf("v%d.%d-Rev%d", nVersion / 1000000, (nVersion / 10000) % 100, (nVersion / 100) % 100);
+    int nVersion = CLIENT_VERSION;
+    if ((nVersion / 100) % 100 == 0) {
+        return strprintf("v%d.%d", nVersion / 1000000, (nVersion / 10000) % 100);
+    } else {
+        return strprintf("v%d.%d-Rev%d", nVersion / 1000000, (nVersion / 10000) % 100, (nVersion / 100) % 100);
+    }
 }
 
 /**
