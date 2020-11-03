@@ -2163,10 +2163,19 @@ int64_t GetBlockValue(int nHeight)
     CAmount nMoneySupply = chainActive.Tip()->nMoneySupply;
     CAmount nMoneySupplyMax = Params().GetMaxMoneyOut(nHeight);
 
+    // Max Supply error fix.. (WIP)
+    if (nHeight > 800000 && nHeight <= 847302) {
+        if (nMoneySupply >= nMoneySupplyMax) {
+            if (nMoneySupply >= nMoneySupplyMax + 20) {
+                nSubsidy = 0;
+            }
+        }
+    }
+
     // Assure money supply not exceeded
     if (nMoneySupply + nSubsidy >= nMoneySupplyMax) {
         nSubsidy = nMoneySupplyMax - nMoneySupply;
-        if (nSubsidy > 1) {
+        if (nSubsidy > 1 && nHeight > 847302) {
             nSubsidy = 1;
         }
     }
@@ -3002,10 +3011,25 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         nExpectedMint += nFees;
 
     if (!IsBlockValueValid(block, nExpectedMint, pindex->nMint)) {
-        return state.DoS(100,
-            error("ConnectBlock() : reward pays too much (actual=%s vs limit=%s)",
-                FormatMoney(pindex->nMint), FormatMoney(nExpectedMint)),
-            REJECT_INVALID, "bad-cb-amount");
+        // max error fix
+        bool doError = true;
+        int nHeight = pindex->pprev->nHeight;
+        if (nHeight > 810000 && nHeight <= 847302) {
+            CAmount nMoneySupplyMax = Params().GetMaxMoneyOut(nHeight);
+            if (pindex->nMoneySupply >= nMoneySupplyMax) {
+                LogPrintf("%s: nMoneySupply=%s >= nMoneySupplyMax=%s\n", __func__, FormatMoney(nMoneySupply), FormatMoney(nMoneySupplyMax));
+                if (pindex->nMoneySupply <= nMoneySupplyMax + 20) {
+                    LogPrintf("%s: nMoneySupply is less than MAX + 20 and height is less than 847302! Okay - Forcing Valid..", __func__);
+                    doError = false;
+                }
+            }
+        }
+        if (doError) {
+            return state.DoS(100,
+                error("ConnectBlock() : reward pays too much (actual=%s vs limit=%s)",
+                    FormatMoney(pindex->nMint), FormatMoney(nExpectedMint)),
+                REJECT_INVALID, "bad-cb-amount");
+        }
     }
 
     // zerocoin accumulator: if a new accumulator checkpoint was generated, check that it is the correct value
