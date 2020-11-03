@@ -3014,7 +3014,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         // max error fix
         bool doError = true;
         int nHeight = pindex->pprev->nHeight;
-        if (nHeight > 800000 && nHeight <= 834379) { // activation at 847302
+        if (nHeight > 800000 && nHeight <= 834400) { // activation at 847302
             CAmount nMoneySupplyMax = Params().GetMaxMoneyOut(nHeight);
             if (pindex->nMoneySupply + pindex->nMint >= nMoneySupplyMax) {
                 LogPrintf("%s: nMoneySupply=%s >= nMoneySupplyMax=%s\n", __func__, FormatMoney(pindex->nMoneySupply), FormatMoney(nMoneySupplyMax));
@@ -3024,8 +3024,13 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                 }
             }
             // forced validations begin here..
-            if (nHeight >= 810007) {
-                if (pindex->GetBlockHash() == uint256("a5ee078f7f6cc933fd14eaab113cec2f0b2fa515c3ff5825eb09e4e6460fcbbd")) {
+            if (nHeight >= 809907) {
+                if (pindex->GetBlockHash() == uint256("c1e7ab16a07a0b7c55f7b689b89e25d916e4fd8b295bfcdf163a14cd54f14ee1")) {
+                    LogPrintf("ConnectBlock() : reward pays too much (actual=%s vs limit=%s)",
+                        FormatMoney(pindex->nMint), FormatMoney(nExpectedMint))
+                    LogPrintf("%s: Block %s reward breaches Max Supply! Notice - Forcing Valid..", __func__, nHeight);
+                    doError = false;
+                } else if (pindex->GetBlockHash() == uint256("a5ee078f7f6cc933fd14eaab113cec2f0b2fa515c3ff5825eb09e4e6460fcbbd")) {
                     LogPrintf("%s: Block %s breaches Max Supply! Notice - Forcing Valid..", __func__, nHeight);
                     doError = false;
                 } else if (pindex->GetBlockHash() == uint256("67e44ed7c82f60595a6dcaaa073bee259939638d00a26cc62ee3baaf8ea29ce5")) {
