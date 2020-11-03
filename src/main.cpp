@@ -2128,7 +2128,7 @@ double ConvertBitsToDouble(unsigned int nBits)
 int64_t GetBlockValue(int nHeight)
 {
     int64_t nSubsidy = 0;
-    //int nSupplyUpdateHeight = Params().SupplyChangeStartHeight();
+    int nSupplyUpdateHeight = Params().SupplyChangeStartHeight();
 
     if (nHeight == 0) {
         nSubsidy = 4000000 * COIN;
@@ -2146,9 +2146,9 @@ int64_t GetBlockValue(int nHeight)
         nSubsidy = 30 * COIN;
     } else if (nHeight <= 500000 && nHeight > 250000) {
         nSubsidy = 25 * COIN;
-    } else if (nHeight <= 847302 && nHeight > 500000) {
+    } else if (nHeight <= nSupplyUpdateHeight && nHeight > 500000) {
         nSubsidy = 20 * COIN;
-    } else if (nHeight <= 876391 && nHeight > 847302) {
+    } else if (nHeight <= 876391 && nHeight > nSupplyUpdateHeight) {
         nSubsidy = 15 * COIN;
     } else if (nHeight <= 963656 && nHeight > 876391) {
         nSubsidy = 10 * COIN;
@@ -2166,11 +2166,20 @@ int64_t GetBlockValue(int nHeight)
     // Assure money supply not exceeded
     if (nMoneySupply + nSubsidy >= nMoneySupplyMax) {
         nSubsidy = nMoneySupplyMax - nMoneySupply;
-        if (nSubsidy > 1) {
-            nSubsidy = 1;
+        // Handle new rules at height
+        if (nHeight > nSupplyUpdateHeight) {
+            if (nSubsidy > 1) {
+                // Force to 1
+                nSubsidy = 1;
+            } else if (nSubsidy < 0) {
+                // Set 0 if negative.
+                nSubsidy = 0;
+            }
         }
     }
+
     if (nMoneySupply >= nMoneySupplyMax) {
+        // Set subsidy to 0 if at max supply.
         nSubsidy = 0;
     }
 
@@ -3001,7 +3010,9 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     if (block.IsProofOfWork())
         nExpectedMint += nFees;
 
+    // Check if block mint reward is valid.
     if (!IsBlockValueValid(block, nExpectedMint, pindex->nMint)) {
+        // Return error for reward paying too much.
         return state.DoS(100,
             error("ConnectBlock() : reward pays too much (actual=%s vs limit=%s)",
                 FormatMoney(pindex->nMint), FormatMoney(nExpectedMint)),
@@ -3956,34 +3967,31 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
             if (block.vtx[i].IsCoinStake())
                 return state.DoS(100, error("CheckBlock() : more than one coinstake"));
 
-    if(IsSporkActive(SPORK_17_FAKE_STAKE_FIX) && block.GetBlockTime() >= GetSporkValue(SPORK_17_FAKE_STAKE_FIX)) {
+        //additional check against false PoS attack
+        if (IsSporkActive(SPORK_17_FAKE_STAKE_FIX) && block.GetBlockTime() >= GetSporkValue(SPORK_17_FAKE_STAKE_FIX)) {
+            // Check for coin age.
+            // First try finding the previous transaction in database.
+            CTransaction txPrev;
+            uint256 hashBlockPrev;
+            if (!GetTransaction(block.vtx[1].vin[0].prevout.hash, txPrev, hashBlockPrev, true))
+                return state.DoS(100, error("CheckBlock() : stake failed to find vin transaction"));
+            // Find block in map.
+            CBlockIndex* pindex = NULL;
+            BlockMap::iterator it = mapBlockIndex.find(hashBlockPrev);
+            if (it != mapBlockIndex.end())
+                pindex = it->second;
+            else
+                return state.DoS(100, error("CheckBlock() :  stake failed to find block index"));
+            // Check block time vs stake age requirement.
+            if (pindex->GetBlockHeader().nTime + nStakeMinAge > GetAdjustedTime())
+                return state.DoS(100, error("CheckBlock() : stake under min. stake age"));
 
-            //additional check against false PoS attack
+            // Check that the prev. stake block has required confirmations by height.
+            LogPrintf("CheckBlock() : height=%d stake_tx_height=%d required_confirmations=%d got=%d\n", chainActive.Tip()->nHeight, pindex->nHeight, STAKE_MIN_CONF, chainActive.Tip()->nHeight - pindex->nHeight);
+            if (chainActive.Tip()->nHeight - pindex->nHeight < STAKE_MIN_CONF)
+                return state.DoS(100, error("CheckBlock() : stake under min. required confirmations"));
 
-        // Check for coin age.
-        // First try finding the previous transaction in database.
-        CTransaction txPrev;
-        uint256 hashBlockPrev;
-        if (!GetTransaction(block.vtx[1].vin[0].prevout.hash, txPrev, hashBlockPrev, true))
-            return state.DoS(100, error("CheckBlock() : stake failed to find vin transaction"));
-        // Find block in map.
-        CBlockIndex* pindex = NULL;
-        BlockMap::iterator it = mapBlockIndex.find(hashBlockPrev);
-        if (it != mapBlockIndex.end())
-            pindex = it->second;
-        else
-            return state.DoS(100, error("CheckBlock() :  stake failed to find block index"));
-        // Check block time vs stake age requirement.
-        if (pindex->GetBlockHeader().nTime + nStakeMinAge > GetAdjustedTime())
-            return state.DoS(100, error("CheckBlock() : stake under min. stake age"));
-
-        // Check that the prev. stake block has required confirmations by height.
-        LogPrintf("CheckBlock() : height=%d stake_tx_height=%d required_confirmations=%d got=%d\n", chainActive.Tip()->nHeight, pindex->nHeight, STAKE_MIN_CONF, chainActive.Tip()->nHeight - pindex->nHeight);
-        if (chainActive.Tip()->nHeight - pindex->nHeight < STAKE_MIN_CONF)
-            return state.DoS(100, error("CheckBlock() : stake under min. required confirmations"));
-
-    }
-
+        }
     }
 
     // ----------- swiftTX transaction scanning -----------

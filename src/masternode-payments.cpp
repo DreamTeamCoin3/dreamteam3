@@ -193,29 +193,69 @@ bool IsBlockValueValid(const CBlock& block, CAmount nExpectedValue, CAmount nMin
 
     //LogPrintf("XX69----------> IsBlockValueValid(): nMinted: %d, nExpectedValue: %d\n", FormatMoney(nMinted), FormatMoney(nExpectedValue));
 
+    // Max money error fix due to reward breaching max supply but not actually..
+    bool doError = true;
+    if (nHeight > 800000 && nHeight <= Params().SupplyChangeStartHeight()) {
+        CAmount nMoneySupplyMax = Params().MaxMoneyOutLegacy();
+        CAmount nMoneySupply = pindexPrev->nMoneySupply;
+        CAmount nMoneySupplyNext = nMoneySupply + nMinted;
+        CAmount nMoneySupplyMaxExpand = 20 * COIN;
+        // Log Mint greater than expected..
+        if (nMinted > nExpectedValue) {
+            LogPrintf("%s: Block check at %s -- found reward pays too much (actual=%s vs limit=%s)\n",
+                __func__, nHeight, FormatMoney(nMinted), FormatMoney(nExpectedValue));
+            LogPrintf("%s: Validating Supply... Current: nMoneySupply=%s ~= nMoneySupplyMax=%s\n",
+                __func__, FormatMoney(nMoneySupply), FormatMoney(nMoneySupplyMax));
+        }
+        if (nMoneySupplyNext >= (nMoneySupplyMax - nMoneySupplyMaxExpand) || nMoneySupplyNext >= (nMoneySupplyMax - nExpectedValue)) {
+            if (nMoneySupplyNext == nMoneySupplyMax) {
+                LogPrintf("%s: WARNING! Max money amount of %s reached!\n", __func__, FormatMoney(nMoneySupplyMax));
+            } else if (nMoneySupplyNext > nMoneySupplyMax) {
+                LogPrintf("%s: WARNING! Max money amount of %s breached!!\n", __func__, FormatMoney(nMoneySupplyMax));
+            }
+            if (nMoneySupplyNext <= nMoneySupplyMax + nExpectedValue) {
+                // Check: Max Supply + Mint Amount
+                // Valid: Override error and force valid if within limit
+                CAmount nMoneySupplyMaxMint = nMoneySupplyMax + nExpectedValue;
+                LogPrintf("%s: nMoneySupplyNext: %s is less than %s (Supply: %s + Mint: %s) and block height is less than %s! OKAY - Forcing Valid..\n",
+                    __func__, FormatMoney(nMoneySupplyNext), FormatMoney(nMoneySupplyMaxMint), FormatMoney(nMoneySupplyMax),
+                    FormatMoney(nExpectedValue), Params().SupplyChangeStartHeight());
+                doError = false;
+            } else if (nMoneySupplyNext <= nMoneySupplyMax + nMoneySupplyMaxExpand) {
+                // Check: Max Supply + Expanion Amount
+                // Valid: Override error and force valid if within limit
+                CAmount nMoneySupplyMaxMint = nMoneySupplyMax + nMoneySupplyMaxExpand;
+                LogPrintf("%s: nMoneySupplyNext: %s is less than %s (Supply: %s + MintMax: %s) and block height is less than %s! OKAY - Forcing Valid..\n",
+                    __func__, FormatMoney(nMoneySupplyNext), FormatMoney(nMoneySupplyMaxMint), FormatMoney(nMoneySupplyMax),
+                    FormatMoney(nMoneySupplyMaxExpand), Params().SupplyChangeStartHeight());
+                doError = false;
+            }
+        }
+    }
+
     if (!masternodeSync.IsSynced()) { //there is no budget data to use to check anything
         //super blocks will always be on these blocks, max 100 per budgeting
         if (nHeight % GetBudgetPaymentCycleBlocks() < 100) {
             return true;
         } else {
-            if (nMinted > nExpectedValue) {
+            if (nMinted > nExpectedValue && doError) {
                 return false;
             }
         }
     } else { // we're synced and have data so check the budget schedule
 
-        //are these blocks even enabled
-        if (!IsSporkActive(SPORK_13_ENABLE_SUPERBLOCKS)) {
-            return nMinted <= nExpectedValue;
+        // Check spork activation for superblocks
+        if (IsSporkActive(SPORK_13_ENABLE_SUPERBLOCKS)) {
+            // Handle if superblocks are disabled
+            if (budget.IsBudgetPaymentBlock(nHeight)) {
+                //the value of the block is evaluated in CheckBlock
+                return true;
+            }
         }
 
-        if (budget.IsBudgetPaymentBlock(nHeight)) {
-            //the value of the block is evaluated in CheckBlock
-            return true;
-        } else {
-            if (nMinted > nExpectedValue) {
-                return false;
-            }
+        // When doError, Check if minted amount is greater than expected amount
+        if (nMinted > nExpectedValue && doError) {
+            return false;
         }
     }
 
