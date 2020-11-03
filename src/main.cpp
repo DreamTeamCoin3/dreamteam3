@@ -3014,12 +3014,13 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         // max error fix
         bool doError = true;
         int nHeight = pindex->nHeight;
-        if (nHeight > 800000 && nHeight <= 834400) { // activation at 847302
+        if (nHeight > 800000 && nHeight <= Params().SupplyChangeStartHeight()) {
             CAmount nMoneySupplyMax = Params().GetMaxMoneyOut(nHeight);
             if (pindex->nMoneySupply + pindex->nMint >= nMoneySupplyMax) {
                 LogPrintf("%s: nMoneySupply=%s >= nMoneySupplyMax=%s\n", __func__, FormatMoney(pindex->nMoneySupply), FormatMoney(nMoneySupplyMax));
                 if (pindex->nMoneySupply + pindex->nMint <= nMoneySupplyMax + 20) {
-                    LogPrintf("%s: nMoneySupply is less than MAX + 20 and height is less than 847302! Okay - Forcing Valid..", __func__);
+                    LogPrintf("%s: nMoneySupply is less than MAX + 20 and block height is less than %s! Okay - Forcing Valid..",
+                        __func__, Params().SupplyChangeStartHeight());
                     doError = false;
                 }
             }
