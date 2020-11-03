@@ -3012,51 +3012,11 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
     // Check if block mint reward is valid.
     if (!IsBlockValueValid(block, nExpectedMint, pindex->nMint)) {
-        // max error fix due to reward breaching max supply but not actually..
-        bool doError = true;
-        int nHeight = pindex->nHeight;
-        int nHeightPrev = pindex->pprev->nHeight;
-        if (nHeightPrev > 800000 && nHeightPrev <= Params().SupplyChangeStartHeight()) {
-            CAmount nMoneySupplyMax = Params().MaxMoneyOutLegacy();
-            CAmount nMoneySupplyNext = pindex->nMoneySupply + pindex->nMint;
-            CAmount nMoneySupplyMaxExpand = 20 * COIN;
-            if (nMoneySupplyNext >= (nMoneySupplyMax - nMoneySupplyMaxExpand) || nMoneySupplyNext >= (nMoneySupplyMax - nExpectedMint)) {
-                LogPrintf("%s: WARNING! Max money amount of %s reached!\n",
-                    __func__, nMoneySupplyMax);
-                // Log Mint greater than expected..
-                if (pindex->nMint > FormatMoney(nExpectedMint)) {
-                    LogPrintf("ConnectBlock() : block %s reward pays too much (actual=%s vs limit=%s)\n",
-                        nHeight, FormatMoney(pindex->nMint), FormatMoney(nExpectedMint));
-                    LogPrintf("%s: nMoneySupply=%s >= nMoneySupplyMax=%s\n", __func__,
-                        FormatMoney(pindex->nMoneySupply), FormatMoney(nMoneySupplyMax));
-                }
-                // Check: Max Supply + Mint Amount
-                // Valid: Override error and force valid if within limit
-                if (nMoneySupplyNext <= nMoneySupplyMax + nExpectedMint) {
-                    CAmount nMoneySupplyMaxMint = nMoneySupplyMax + nExpectedMint;
-                    LogPrintf("%s: nMoneySupply is less than %s (Supply: %s + Mint: %s) and block height is less than %s! Okay - Forcing Valid..\n",
-                        __func__, FormatMoney(nMoneySupplyMaxMint), FormatMoney(nMoneySupplyMax),
-                        FormatMoney(nExpectedMint), Params().SupplyChangeStartHeight());
-                    doError = false;
-                }
-                // Check: Max Supply + Expanion Amount
-                // Valid: Override error and force valid if within limit
-                if (nMoneySupplyNext <= nMoneySupplyMax + nMoneySupplyMaxExpand) {
-                    CAmount nMoneySupplyMaxMint = nMoneySupplyMax + nMoneySupplyMaxExpand;
-                    LogPrintf("%s: nMoneySupply is less than %s (Supply: %s + MintMax: %s) and block height is less than %s! Okay - Forcing Valid..\n",
-                        __func__, FormatMoney(nMoneySupplyMaxMint), FormatMoney(nMoneySupplyMax),
-                        FormatMoney(nMoneySupplyMaxExpand), Params().SupplyChangeStartHeight());
-                    doError = false;
-                }
-            }
-        }
-        if (doError) {
-            // Return error for reward paying too much.
-            return state.DoS(100,
-                error("ConnectBlock() : reward pays too much (actual=%s vs limit=%s)",
-                    FormatMoney(pindex->nMint), FormatMoney(nExpectedMint)),
-                REJECT_INVALID, "bad-cb-amount");
-        }
+        // Return error for reward paying too much.
+        return state.DoS(100,
+            error("ConnectBlock() : reward pays too much (actual=%s vs limit=%s)",
+                FormatMoney(pindex->nMint), FormatMoney(nExpectedMint)),
+            REJECT_INVALID, "bad-cb-amount");
     }
 
     // zerocoin accumulator: if a new accumulator checkpoint was generated, check that it is the correct value

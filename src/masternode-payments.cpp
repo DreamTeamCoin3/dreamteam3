@@ -193,13 +193,49 @@ bool IsBlockValueValid(const CBlock& block, CAmount nExpectedValue, CAmount nMin
 
     //LogPrintf("XX69----------> IsBlockValueValid(): nMinted: %d, nExpectedValue: %d\n", FormatMoney(nMinted), FormatMoney(nExpectedValue));
 
+    // Max money error fix due to reward breaching max supply but not actually..
+    bool doError = true;
+    if (nHeight > 800000 && nHeight <= Params().SupplyChangeStartHeight()) {
+        CAmount nMoneySupplyMax = Params().MaxMoneyOutLegacy();
+        CAmount nMoneySupplyNext = pindexPrev->nMoneySupply + nMinted;
+        CAmount nMoneySupplyMaxExpand = 20 * COIN;
+        // Log Mint greater than expected..
+        if (nMinted > nExpectedValue) {
+            LogPrintf("ConnectBlock() : block %s reward pays too much (actual=%s vs limit=%s)\n",
+                nHeight, FormatMoney(nMinted), FormatMoney(nExpectedValue));
+            LogPrintf("%s: nMoneySupply=%s >= nMoneySupplyMax=%s\n", __func__,
+                FormatMoney(pindexPrev->nMoneySupply), FormatMoney(nMoneySupplyMax));
+        }
+        if (nMoneySupplyNext >= (nMoneySupplyMax - nMoneySupplyMaxExpand) || nMoneySupplyNext >= (nMoneySupplyMax - nExpectedValue)) {
+            LogPrintf("%s: WARNING! Max money amount of %s reached!\n", __func__, nMoneySupplyMax);
+            // Check: Max Supply + Mint Amount
+            // Valid: Override error and force valid if within limit
+            if (nMoneySupplyNext <= nMoneySupplyMax + nExpectedValue) {
+                CAmount nMoneySupplyMaxMint = nMoneySupplyMax + nExpectedValue;
+                LogPrintf("%s: nMoneySupply is less than %s (Supply: %s + Mint: %s) and block height is less than %s! Okay - Forcing Valid..\n",
+                    __func__, FormatMoney(nMoneySupplyMaxMint), FormatMoney(nMoneySupplyMax),
+                    FormatMoney(nExpectedValue), Params().SupplyChangeStartHeight());
+                doError = false;
+            }
+            // Check: Max Supply + Expanion Amount
+            // Valid: Override error and force valid if within limit
+            if (nMoneySupplyNext <= nMoneySupplyMax + nMoneySupplyMaxExpand) {
+                CAmount nMoneySupplyMaxMint = nMoneySupplyMax + nMoneySupplyMaxExpand;
+                LogPrintf("%s: nMoneySupply is less than %s (Supply: %s + MintMax: %s) and block height is less than %s! Okay - Forcing Valid..\n",
+                    __func__, FormatMoney(nMoneySupplyMaxMint), FormatMoney(nMoneySupplyMax),
+                    FormatMoney(nMoneySupplyMaxExpand), Params().SupplyChangeStartHeight());
+                doError = false;
+            }
+        }
+    }
+
     if (!masternodeSync.IsSynced()) { //there is no budget data to use to check anything
         //super blocks will always be on these blocks, max 100 per budgeting
         if (nHeight % GetBudgetPaymentCycleBlocks() < 100) {
             return true;
         } else {
             if (nMinted > nExpectedValue) {
-                return false;
+                return !doError;
             }
         }
     } else { // we're synced and have data so check the budget schedule
@@ -214,7 +250,7 @@ bool IsBlockValueValid(const CBlock& block, CAmount nExpectedValue, CAmount nMin
             return true;
         } else {
             if (nMinted > nExpectedValue) {
-                return false;
+                return !doError;
             }
         }
     }
