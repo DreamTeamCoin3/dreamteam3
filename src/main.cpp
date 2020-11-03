@@ -3015,7 +3015,8 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         // max error fix due to reward breaching max supply but not actually..
         bool doError = true;
         int nHeight = pindex->nHeight;
-        if (nHeight > 800000 && nHeight <= Params().SupplyChangeStartHeight()) {
+        int nHeightPrev = pindex->pprev->nHeight;
+        if (nHeightPrev > 800000 && nHeightPrev <= Params().SupplyChangeStartHeight()) {
             CAmount nMoneySupplyMax = Params().MaxMoneyOutLegacy();
             CAmount nMoneySupplyNext = pindex->nMoneySupply + pindex->nMint;
             CAmount nMoneySupplyMaxExpand = 20 * COIN;
@@ -3025,8 +3026,8 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                 // Log Mint greater than expected..
                 if (pindex->nMint > FormatMoney(nExpectedMint)) {
                     LogPrintf("ConnectBlock() : block %s reward pays too much (actual=%s vs limit=%s)\n",
-                        FormatMoney(nHeight, pindex->nMint), FormatMoney(nExpectedMint));
-                        LogPrintf("%s: nMoneySupply=%s >= nMoneySupplyMax=%s\n", __func__,
+                        nHeight, FormatMoney(pindex->nMint), FormatMoney(nExpectedMint));
+                    LogPrintf("%s: nMoneySupply=%s >= nMoneySupplyMax=%s\n", __func__,
                         FormatMoney(pindex->nMoneySupply), FormatMoney(nMoneySupplyMax));
                 }
                 // Check: Max Supply + Mint Amount
