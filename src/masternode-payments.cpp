@@ -204,14 +204,14 @@ bool IsBlockValueValid(const CBlock& block, CAmount nExpectedValue, CAmount nMin
         if (nMinted > nExpectedValue) {
             LogPrintf("%s: Block check at %s -- found reward pays too much (actual=%s vs limit=%s)\n",
                 __func__, nHeight, FormatMoney(nMinted), FormatMoney(nExpectedValue));
-            LogPrintf("%s: Validating.. nMoneySupply=%s ~= nMoneySupplyMax=%s\n", __func__,
-                FormatMoney(nMoneySupply), FormatMoney(nMoneySupplyMax));
+            LogPrintf("%s: Validating Supply... Current: nMoneySupply=%s ~= nMoneySupplyMax=%s\n",
+                __func__, FormatMoney(nMoneySupply), FormatMoney(nMoneySupplyMax));
         }
         if (nMoneySupplyNext >= (nMoneySupplyMax - nMoneySupplyMaxExpand) || nMoneySupplyNext >= (nMoneySupplyMax - nExpectedValue)) {
             if (nMoneySupplyNext == nMoneySupplyMax) {
-                LogPrintf("%s: WARNING! Max money amount of %s reached!\n", __func__, nMoneySupplyMax);
+                LogPrintf("%s: WARNING! Max money amount of %s reached!\n", __func__, FormatMoney(nMoneySupplyMax));
             } else if (nMoneySupplyNext > nMoneySupplyMax) {
-                LogPrintf("%s: WARNING! Max money amount of %s breached!!\n", __func__, nMoneySupplyMax);
+                LogPrintf("%s: WARNING! Max money amount of %s breached!!\n", __func__, FormatMoney(nMoneySupplyMax));
             }
             if (nMoneySupplyNext <= nMoneySupplyMax + nExpectedValue) {
                 // Check: Max Supply + Mint Amount
@@ -226,7 +226,7 @@ bool IsBlockValueValid(const CBlock& block, CAmount nExpectedValue, CAmount nMin
                 // Valid: Override error and force valid if within limit
                 CAmount nMoneySupplyMaxMint = nMoneySupplyMax + nMoneySupplyMaxExpand;
                 LogPrintf("%s: nMoneySupplyNext: %s is less than %s (Supply: %s + MintMax: %s) and block height is less than %s! OKAY - Forcing Valid..\n",
-                    __func__, FormatMoney(nMoneySupplyNext), (nMoneySupplyMaxMint), FormatMoney(nMoneySupplyMax),
+                    __func__, FormatMoney(nMoneySupplyNext), FormatMoney(nMoneySupplyMaxMint), FormatMoney(nMoneySupplyMax),
                     FormatMoney(nMoneySupplyMaxExpand), Params().SupplyChangeStartHeight());
                 doError = false;
             }
