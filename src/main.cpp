@@ -3027,10 +3027,10 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             if (nHeight >= 810007) {
                 if (pindex->GetBlockHash() == uint256("a5ee078f7f6cc933fd14eaab113cec2f0b2fa515c3ff5825eb09e4e6460fcbbd")) {
                     LogPrintf("%s: Block %s breaches Max Supply! Notice - Forcing Valid..", __func__, nHeight);
-                    doError == false;
+                    doError = false;
                 } else if (pindex->GetBlockHash() == uint256("67e44ed7c82f60595a6dcaaa073bee259939638d00a26cc62ee3baaf8ea29ce5")) {
                     LogPrintf("%s: Block %s breaches Max Supply! Notice - Forcing Valid..", __func__, nHeight);
-                    doError == false;
+                    doError = false;
                 }
             }
         }
