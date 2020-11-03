@@ -3017,7 +3017,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         if (nHeight > 810000 && nHeight <= 847302) {
             CAmount nMoneySupplyMax = Params().GetMaxMoneyOut(nHeight);
             if (pindex->nMoneySupply >= nMoneySupplyMax) {
-                LogPrintf("%s: nMoneySupply=%s >= nMoneySupplyMax=%s\n", __func__, FormatMoney(nMoneySupply), FormatMoney(nMoneySupplyMax));
+                LogPrintf("%s: nMoneySupply=%s >= nMoneySupplyMax=%s\n", __func__, FormatMoney(pindex->nMoneySupply), FormatMoney(nMoneySupplyMax));
                 if (pindex->nMoneySupply <= nMoneySupplyMax + 20) {
                     LogPrintf("%s: nMoneySupply is less than MAX + 20 and height is less than 847302! Okay - Forcing Valid..", __func__);
                     doError = false;
