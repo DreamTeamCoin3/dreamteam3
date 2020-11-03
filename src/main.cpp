@@ -2128,7 +2128,7 @@ double ConvertBitsToDouble(unsigned int nBits)
 int64_t GetBlockValue(int nHeight)
 {
     int64_t nSubsidy = 0;
-    //int nSupplyUpdateHeight = Params().SupplyChangeStartHeight();
+    int nSupplyUpdateHeight = Params().SupplyChangeStartHeight();
 
     if (nHeight == 0) {
         nSubsidy = 4000000 * COIN;
@@ -2146,9 +2146,9 @@ int64_t GetBlockValue(int nHeight)
         nSubsidy = 30 * COIN;
     } else if (nHeight <= 500000 && nHeight > 250000) {
         nSubsidy = 25 * COIN;
-    } else if (nHeight <= 847302 && nHeight > 500000) {
+    } else if (nHeight <= nSupplyUpdateHeight && nHeight > 500000) {
         nSubsidy = 20 * COIN;
-    } else if (nHeight <= 876391 && nHeight > 847302) {
+    } else if (nHeight <= 876391 && nHeight > nSupplyUpdateHeight) {
         nSubsidy = 15 * COIN;
     } else if (nHeight <= 963656 && nHeight > 876391) {
         nSubsidy = 10 * COIN;
@@ -2163,23 +2163,23 @@ int64_t GetBlockValue(int nHeight)
     CAmount nMoneySupply = chainActive.Tip()->nMoneySupply;
     CAmount nMoneySupplyMax = Params().GetMaxMoneyOut(nHeight);
 
-    // Max Supply error fix.. (WIP)
-    if (nHeight > 800000 && nHeight <= 847302) {
-        if (nMoneySupply >= nMoneySupplyMax) {
-            if (nMoneySupply >= nMoneySupplyMax + 20) {
+    // Assure money supply not exceeded
+    if (nMoneySupply + nSubsidy >= nMoneySupplyMax) {
+        nSubsidy = nMoneySupplyMax - nMoneySupply;
+        // Handle new rules at height
+        if (nHeight > nSupplyUpdateHeight) {
+            if (nSubsidy > 1) {
+                // Force to 1
+                nSubsidy = 1;
+            } else if (nSubsidy < 0) {
+                // Set 0 if negative.
                 nSubsidy = 0;
             }
         }
     }
 
-    // Assure money supply not exceeded
-    if (nMoneySupply + nSubsidy >= nMoneySupplyMax) {
-        nSubsidy = nMoneySupplyMax - nMoneySupply;
-        if (nSubsidy > 1 && nHeight > 847302) {
-            nSubsidy = 1;
-        }
-    }
     if (nMoneySupply >= nMoneySupplyMax) {
+        // Set subsidy to 0 if at max supply.
         nSubsidy = 0;
     }
 
