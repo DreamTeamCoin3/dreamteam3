@@ -3019,27 +3019,30 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             if (pindex->nMoneySupply + pindex->nMint >= nMoneySupplyMax) {
                 LogPrintf("%s: nMoneySupply=%s >= nMoneySupplyMax=%s\n", __func__, FormatMoney(pindex->nMoneySupply), FormatMoney(nMoneySupplyMax));
                 if (pindex->nMoneySupply + pindex->nMint <= nMoneySupplyMax + 20) {
-                    LogPrintf("%s: nMoneySupply is less than MAX + 20 and block height is less than %s! Okay - Forcing Valid..",
+                    LogPrintf("%s: nMoneySupply is less than MAX + 20 and block height is less than %s! Okay - Forcing Valid..\n",
                         __func__, Params().SupplyChangeStartHeight());
                     doError = false;
                 }
             }
             // forced validations begin here..
             if (nHeight >= 809907) {
-                if (nHeight == 809907) {
-                    LogPrintf("%s: Block %s ConnectBlock() Warning - Forcing Valid..", __func__, nHeight);
-                }
                 if (block.GetHash() == uint256("c1e7ab16a07a0b7c55f7b689b89e25d916e4fd8b295bfcdf163a14cd54f14ee1")) {
-                    LogPrintf("ConnectBlock() : reward pays too much (actual=%s vs limit=%s)",
-                        FormatMoney(pindex->nMint), FormatMoney(nExpectedMint));
-                    LogPrintf("%s: Block %s reward breaches Max Supply! Notice - Forcing Valid..", __func__, nHeight);
+                    LogPrintf("%s: Block %s reward breaches Max Supply! Notice - Forcing Valid..\n", __func__, nHeight);
                     doError = false;
                 } else if (block.GetHash() == uint256("a5ee078f7f6cc933fd14eaab113cec2f0b2fa515c3ff5825eb09e4e6460fcbbd")) {
-                    LogPrintf("%s: Block %s breaches Max Supply! Notice - Forcing Valid..", __func__, nHeight);
+                    LogPrintf("%s: Block %s breaches Max Supply! Notice - Forcing Valid..\n", __func__, nHeight);
                     doError = false;
                 } else if (block.GetHash() == uint256("67e44ed7c82f60595a6dcaaa073bee259939638d00a26cc62ee3baaf8ea29ce5")) {
-                    LogPrintf("%s: Block %s breaches Max Supply! Notice - Forcing Valid..", __func__, nHeight);
+                    LogPrintf("%s: Block %s breaches Max Supply! Notice - Forcing Valid..\n", __func__, nHeight);
                     doError = false;
+                }
+                if (nHeight <= 810010) {
+                    LogPrintf("ConnectBlock() : block %s reward pays too much (actual=%s vs limit=%s)\n",
+                        FormatMoney(nHeight, pindex->nMint), FormatMoney(nExpectedMint));
+                    if (doError) {
+                        LogPrintf("%s: Block %s ConnectBlock() Warning - Forcing Valid..\n", __func__, nHeight);
+                        doError = false;
+                    }
                 }
             }
         }
