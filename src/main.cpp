@@ -3014,7 +3014,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         // max error fix
         bool doError = true;
         int nHeight = pindex->pprev->nHeight;
-        if (nHeight > 810000 && nHeight <= 847302) {
+        if (nHeight > 800000 && nHeight <= 847302) {
             CAmount nMoneySupplyMax = Params().GetMaxMoneyOut(nHeight);
             if (pindex->nMoneySupply >= nMoneySupplyMax) {
                 LogPrintf("%s: nMoneySupply=%s >= nMoneySupplyMax=%s\n", __func__, FormatMoney(pindex->nMoneySupply), FormatMoney(nMoneySupplyMax));
